@@ -32,6 +32,12 @@ export const MAX_DISTANCE = 0.2;
 export const MIN_MARGIN = 1.15;
 /** Points less visible than this get almost no say. */
 const MIN_WEIGHT = 0.05;
+/**
+ * Share of a template's visible body that must also be visible live. Without
+ * it, a pose told apart mainly by the legs (like B) matches anyone standing
+ * still with the legs out of frame, since hidden points get almost no say.
+ */
+export const MIN_COVERAGE = 0.8;
 
 /**
  * Makes a pose comparable regardless of where the person stands and how big
@@ -67,15 +73,22 @@ export function averageFeatures(features: Feature[]): Feature {
   });
 }
 
-/** Mean point-to-point distance, where points hidden in either pose count less. */
-function distance(a: Feature, b: Feature): number {
+/**
+ * Mean point-to-point distance from a live pose to a template, where points
+ * hidden in either pose count less. Infinity when too much of what the
+ * template shows is hidden live (see MIN_COVERAGE).
+ */
+function distance(live: Feature, template: Feature): number {
   let total = 0;
   let weights = 0;
-  for (let i = 0; i < a.length; i++) {
-    const w = Math.max(MIN_WEIGHT, Math.min(a[i][2], b[i][2]));
-    total += w * Math.hypot(a[i][0] - b[i][0], a[i][1] - b[i][1]);
+  let templateWeights = 0;
+  for (let i = 0; i < live.length; i++) {
+    const w = Math.max(MIN_WEIGHT, Math.min(live[i][2], template[i][2]));
+    total += w * Math.hypot(live[i][0] - template[i][0], live[i][1] - template[i][1]);
     weights += w;
+    templateWeights += Math.max(MIN_WEIGHT, template[i][2]);
   }
+  if (weights / templateWeights < MIN_COVERAGE) return Infinity;
   return total / weights;
 }
 
@@ -86,7 +99,8 @@ export function nearest(feature: Feature, templates: Template[]): Match | null {
     const d = distance(feature, t.points);
     if (d < (bestPerLabel.get(t.label) ?? Infinity)) bestPerLabel.set(t.label, d);
   }
-  const ranked = [...bestPerLabel].sort((a, b) => a[1] - b[1]);
+  const ranked = [...bestPerLabel].filter(([, d]) => d < Infinity).sort((a, b) => a[1] - b[1]);
+  // Empty when no templates exist or too little of the body is in view.
   if (ranked.length === 0) return null;
   return {
     label: ranked[0][0],

@@ -4,12 +4,14 @@
  * these browsers send the audio to Google/Apple to turn it into text.
  */
 
-export type VoiceCommand = "start" | "stop" | "clear";
+export type VoiceCommand = "start" | "stop" | "clear" | "send" | "undo";
 
 const COMMAND_WORDS: Record<VoiceCommand, string[]> = {
   start: ["starta", "start", "börja"],
   stop: ["stopp", "stoppa", "stop", "pausa", "sluta"],
   clear: ["rensa"],
+  send: ["skicka"],
+  undo: ["ångra"],
 };
 
 /** The same command is not fired again within this time (interim results repeat it). */
