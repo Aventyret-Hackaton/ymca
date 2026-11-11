@@ -110,8 +110,6 @@ function speak(text: string): void {
 
 function renderMessage(): void {
   messageEl.textContent = message;
-  // An empty message means a new one begins, so the count starts over.
-  if (message === "") calories.reset();
 }
 
 /** Hook for the team: post to Slack via a server function here. */
@@ -129,9 +127,11 @@ function handleVoiceCommand(command: VoiceCommand): void {
     speak("Skriv ditt meddelande");
   } else if (command === "stop" && writing) {
     writing = false;
+    calories.pause();
     speak("Pausat");
   } else if (command === "clear") {
     message = "";
+    calories.reset();
     renderMessage();
     speak("Rensat");
   }
@@ -141,8 +141,13 @@ function confirm(label: string): void {
   if (label === SPACE) message += " ";
   else if (label === BACKSPACE) message = message.slice(0, -1);
   else if (label === SEND) {
+    // Read before sending, in case sending ever clears the message.
+    const sent = message.trim() !== "";
+    const total = calories.format();
     sendMessage();
-    if (message.trim()) speak(`Det kostade ${calories.format()} kilokalorier`);
+    if (sent) speak(`Det kostade ${total} kilokalorier`);
+    // The next message is counted from zero.
+    calories.reset();
     // A new message has to be started by voice again.
     writing = false;
   } else message += label;
@@ -241,18 +246,22 @@ function drawBanner(text: string): void {
 function drawCalories(): void {
   const text = `${calories.format()} kcal`;
   const size = Math.min(canvas.width, canvas.height) * 0.07;
+  ctx.save();
   ctx.font = `700 ${size}px system-ui, sans-serif`;
   const width = ctx.measureText(text).width + size;
   const x = canvas.width - width - size * 0.4;
   const y = size * 0.4;
   ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
   ctx.beginPath();
-  ctx.roundRect(x, y, width, size * 1.6, size * 0.8);
+  // roundRect is missing in Safari before 16; a plain box is fine there.
+  if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, size * 1.6, size * 0.8);
+  else ctx.rect(x, y, width, size * 1.6);
   ctx.fill();
   ctx.fillStyle = "#ffd23f";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, x + width / 2, y + size * 0.85);
+  ctx.restore();
 }
 
 function describe(match: Match | null, confident: boolean): string {
@@ -300,7 +309,6 @@ function frame(): void {
   }
 
   if (!writing) {
-    calories.pause();
     if (calories.kcal > 0) drawCalories();
     updateHold(null, now);
     drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");

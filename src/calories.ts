@@ -17,10 +17,15 @@ const MAX_EXTRA_MET = 4;
 const MET_PER_SPEED = 3;
 /** Speed below this is treated as jitter in the pose detection, not movement. */
 const NOISE_SPEED = 0.3;
+/**
+ * Movement is measured between poses at least this far apart, so the speed
+ * (and how much jitter adds to it) does not depend on the frame rate.
+ */
+const SAMPLE_MS = 100;
 /** Gaps longer than this (paused, tab hidden) are not counted. */
 const MAX_GAP_MS = 1000;
-/** How quickly the speed estimate follows new frames (0–1). */
-const SMOOTHING = 0.2;
+/** Time for the speed estimate to follow about two thirds of a change. */
+const SMOOTHING_MS = 150;
 const MIN_VISIBILITY = 0.5;
 
 export class CalorieCounter {
@@ -29,14 +34,17 @@ export class CalorieCounter {
   private lastAt = 0;
   private speed = 0;
 
-  /** Call once per frame while the message is being written. */
+  /** Call every frame while the message is being written. */
   update(feature: Feature | null, now: number): void {
     // Nobody in the picture: nothing to count.
     if (!feature) return this.pause();
     const gap = now - this.lastAt;
-    if (this.lastAt > 0 && gap > 0 && gap <= MAX_GAP_MS) {
+    // Wait for a longer step; the time is counted when it comes.
+    if (this.lastAt > 0 && gap < SAMPLE_MS) return;
+    if (this.lastAt > 0 && gap <= MAX_GAP_MS) {
       const moved = this.last ? meanDistance(feature, this.last) : 0;
-      this.speed += SMOOTHING * (moved / (gap / 1000) - this.speed);
+      const follow = 1 - Math.exp(-gap / SMOOTHING_MS);
+      this.speed += follow * (moved / (gap / 1000) - this.speed);
       const extra = Math.min(MAX_EXTRA_MET, Math.max(0, this.speed - NOISE_SPEED) * MET_PER_SPEED);
       const kcalPerMinute = ((BASE_MET + extra) * 3.5 * BODY_WEIGHT_KG) / 200;
       this.kcal += kcalPerMinute * (gap / 60_000);

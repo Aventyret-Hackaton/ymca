@@ -88,7 +88,8 @@ du från din fil i repot.
 
 Medan ett meddelande skrivs visas en uppskattning av hur många kilokalorier det
 har kostat, uppe till höger i bilden. Den läses upp när meddelandet skickas och
-börjar om när meddelandet är tomt (*rensa*).
+börjar om från noll efter skicka och efter *rensa*. Suddar man bort alla
+bokstäver räknas det fortfarande som samma meddelande.
 
 Siffran är på skoj och ingen mätning: den bygger på en antagen kroppsvikt på
 70 kg och på hur snabbt kroppens punkter rör sig (`src/calories.ts`). Stilla
