@@ -166,3 +166,24 @@ button:disabled {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.field {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 8px 12px;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
