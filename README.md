@@ -42,9 +42,18 @@ spegelvända från sitt eget håll, och kamerabilden visas ospeglad.
 
 ### Dela mallar i teamet
 
-Mallar sparas i webbläsaren på den enhet där de spelades in. För att dela dem:
-tryck på *Exportera mallar* och checka in filen som `public/templates.json`.
-Den används av alla som inte har egna mallar sparade.
+Mallar sparas i webbläsaren på den enhet där de spelades in. `public/templates.json`
+är den delade uppsättningen, som används av alla som inte har egna mallar sparade.
+
+- **Spara till repot** (syns bara mot utvecklingsservern): skriver enhetens
+  mallar direkt till `public/templates.json` på datorn som kör `npm run dev`
+  eller `npm run dev:phone`. Checka sedan in och pusha filen.
+- **Exportera mallar:** laddar ner samma fil till enheten, om du hellre flyttar
+  den för hand.
+
+Spara till repot ersätter hela filen med enhetens mallar. Hämta därför senaste
+`main` och börja från den delade uppsättningen innan du spelar in fler, så att
+du inte skriver över någon annans poser.
 
 ## Koden
 

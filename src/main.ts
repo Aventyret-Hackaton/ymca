@@ -18,6 +18,7 @@ import {
   importTemplates,
   loadTemplates,
   saveTemplates,
+  saveTemplatesToRepo,
 } from "./templates";
 
 /** How long a pose must be held before it counts. */
@@ -251,6 +252,22 @@ function setUpControls(): void {
   });
 
   $("export-btn").addEventListener("click", () => exportTemplates(templates));
+
+  // Only the dev server can write to the repo; the built app has no such endpoint.
+  if (import.meta.env.DEV) {
+    const repoBtn = $<HTMLButtonElement>("repo-btn");
+    repoBtn.hidden = false;
+    repoBtn.addEventListener("click", async () => {
+      repoBtn.disabled = true;
+      try {
+        await saveTemplatesToRepo(templates);
+        statusEl.textContent = `Sparade ${templates.length} mallar till public/templates.json på datorn. Checka in filen.`;
+      } catch (error) {
+        statusEl.textContent = `Kunde inte spara till repot: ${(error as Error).message}`;
+      }
+      repoBtn.disabled = false;
+    });
+  }
 
   $<HTMLInputElement>("import-input").addEventListener("change", async (event) => {
     const input = event.target as HTMLInputElement;

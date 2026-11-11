@@ -57,6 +57,19 @@ export function exportTemplates(templates: Template[]): void {
   URL.revokeObjectURL(link.href);
 }
 
+/**
+ * Writes the templates to public/templates.json on the computer running the
+ * dev server (see vite.config.ts). Only works in development.
+ */
+export async function saveTemplatesToRepo(templates: Template[]): Promise<void> {
+  const response = await fetch("/__save-templates", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(templates),
+  });
+  if (!response.ok) throw new Error(await response.text());
+}
+
 export async function importTemplates(file: File): Promise<Template[]> {
   const parsed: unknown = JSON.parse(await file.text());
   if (!isTemplateList(parsed)) throw new Error("Filen innehåller inga mallar");
