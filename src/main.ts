@@ -8,6 +8,7 @@ import {
   type Match,
   type Template,
 } from "./classify";
+import { CalorieCounter } from "./calories";
 import { CONNECTIONS, createPoseLandmarker, startCamera, type Landmarks } from "./pose";
 import {
   BACKSPACE,
@@ -72,6 +73,8 @@ function setOwnTemplates(next: Template[]): void {
   refreshTemplates();
 }
 let message = "";
+/** Estimated energy spent on the current message. User mode only. */
+const calories = new CalorieCounter();
 
 /**
  * Setup mode (the settings page, ?setup in the address) is for the team:
@@ -107,6 +110,8 @@ function speak(text: string): void {
 
 function renderMessage(): void {
   messageEl.textContent = message;
+  // An empty message means a new one begins, so the count starts over.
+  if (message === "") calories.reset();
 }
 
 /** Hook for the team: post to Slack via a server function here. */
@@ -137,6 +142,7 @@ function confirm(label: string): void {
   else if (label === BACKSPACE) message = message.slice(0, -1);
   else if (label === SEND) {
     sendMessage();
+    if (message.trim()) speak(`Det kostade ${calories.format()} kilokalorier`);
     // A new message has to be started by voice again.
     writing = false;
   } else message += label;
@@ -231,6 +237,24 @@ function drawBanner(text: string): void {
   ctx.fillText(text, canvas.width / 2, canvas.height - height / 2);
 }
 
+/** Calorie count in the top-right corner of the picture, readable from a distance. */
+function drawCalories(): void {
+  const text = `${calories.format()} kcal`;
+  const size = Math.min(canvas.width, canvas.height) * 0.07;
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  const width = ctx.measureText(text).width + size;
+  const x = canvas.width - width - size * 0.4;
+  const y = size * 0.4;
+  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, size * 1.6, size * 0.8);
+  ctx.fill();
+  ctx.fillStyle = "#ffd23f";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + width / 2, y + size * 0.85);
+}
+
 function describe(match: Match | null, confident: boolean): string {
   if (templates.length === 0) {
     return setupMode
@@ -276,6 +300,8 @@ function frame(): void {
   }
 
   if (!writing) {
+    calories.pause();
+    if (calories.kcal > 0) drawCalories();
     updateHold(null, now);
     drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");
     statusEl.textContent = voiceProblem || "Lyssnar. Säg ”starta” för att börja skriva.";
@@ -284,6 +310,10 @@ function frame(): void {
 
   const match = feature ? nearest(feature, templates) : null;
   const confident = match !== null && isConfident(match);
+  // Counted before the hold is updated: if this frame confirms the send pose,
+  // the spoken total includes it.
+  calories.update(feature, now);
+  drawCalories();
   const progress = updateHold(confident ? match.label : null, now);
   if (confident) drawBadge(match.label, progress);
   statusEl.textContent = describe(match, confident);

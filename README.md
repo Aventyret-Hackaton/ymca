@@ -84,6 +84,16 @@ personens fil.
 Öppnar du appen på en ny enhet eller adress och fyller i samma namn, fortsätter
 du från din fil i repot.
 
+### Kaloriräknare
+
+Medan ett meddelande skrivs visas en uppskattning av hur många kilokalorier det
+har kostat, uppe till höger i bilden. Den läses upp när meddelandet skickas och
+börjar om när meddelandet är tomt (*rensa*).
+
+Siffran är på skoj och ingen mätning: den bygger på en antagen kroppsvikt på
+70 kg och på hur snabbt kroppens punkter rör sig (`src/calories.ts`). Stilla
+ger cirka 2,5 kcal per minut, full fart cirka 7.
+
 ## Koden
 
 | Fil | Innehåll |
@@ -93,6 +103,7 @@ du från din fil i repot.
 | `src/templates.ts` | Hämtar allas mallar, sparar de egna. Listan över bokstäver och kontrollposer |
 | `src/voice.ts` | Röstkommandon via webbläsarens taligenkänning. Kommandoorden står i `COMMAND_WORDS` |
 | `vite.config.ts` | Slår ihop `templates/*.json` till en fil för appen och tar emot Spara till repot |
+| `src/calories.ts` | Uppskattar kalorier per meddelande utifrån hur mycket kroppen rör sig |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste
