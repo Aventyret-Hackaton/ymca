@@ -10,7 +10,16 @@
     <div id="start">
       <h1>YMCA</h1>
       <p>Skriv meddelanden med kroppen. Ställ telefonen lutad cirka tre meter bort så att hela kroppen syns.</p>
-      <button id="start-btn" class="primary">Starta kameran</button>
+      <div id="terms" class="user-only">
+        <h2>Innan du börjar</h2>
+        <ul>
+          <li>Appen använder kameran för att se dina poser. Bilden bearbetas i din telefon och sparas eller skickas inte vidare.</li>
+          <li>Appen använder mikrofonen för röstkommandon. Webbläsarens taligenkänning kan skicka ljudet till Google eller Apple för tolkning.</li>
+          <li>Meddelandet skickas bara när du själv gör skicka-posen.</li>
+        </ul>
+        <p>Säg <strong>starta</strong> för att börja skriva, <strong>stopp</strong> för att pausa och <strong>rensa</strong> för att börja om.</p>
+      </div>
+      <button id="start-btn" class="primary">Godkänn och starta</button>
       <p id="start-status" role="status"></p>
     </div>
 
@@ -22,17 +31,18 @@
       <p id="message" aria-live="polite"></p>
       <p id="status" role="status"></p>
 
-      <nav class="tabs">
+      <nav class="tabs setup-only">
         <button data-tab="write" class="active">Skriv</button>
         <button data-tab="record">Spela in poser</button>
       </nav>
 
       <section id="tab-write">
-        <div class="row">
+        <div class="row setup-only">
           <button id="clear-btn">Rensa</button>
           <a id="sms-link" class="button" href="sms:">Öppna som SMS</a>
         </div>
         <p class="hint">Håll en pose stilla tills ringen fyllts. Släpp posen innan du gör samma bokstav igen.</p>
+        <p class="hint user-only">Röstkommandon: starta, stopp, rensa.</p>
       </section>
 
       <section id="tab-record" hidden>

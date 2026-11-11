@@ -166,3 +166,37 @@ button:disabled {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+/* User mode is the default; ?setup adds the "setup" class to the body. */
+body:not(.setup) .setup-only,
+body.setup .user-only {
+  display: none !important;
+}
+
+#terms {
+  max-width: 36ch;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-radius: 8px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+#terms h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+#terms ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+#terms li {
+  margin-bottom: 6px;
+}
+
+#start #terms p {
+  max-width: none;
+  color: var(--text);
+}

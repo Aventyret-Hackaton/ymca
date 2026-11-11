@@ -26,6 +26,20 @@ npm run dev:phone
 Öppna `Network`-adressen (`https://192.168.…`) på en telefon i samma nätverk och
 godkänn varningen om det självsignerade certifikatet.
 
+## Två lägen
+
+- **Användarläge** (vanliga adressen): ingen inspelning och inga knappar efter
+  start. Användaren godkänner villkoren med ett tryck och styr sedan med rösten:
+  *starta* börjar skriva, *stopp* pausar och *rensa* tömmer meddelandet. Efter
+  skicka-posen krävs ett nytt *starta*.
+- **Inspelningsläge** (lägg till `?setup` i adressen, till exempel
+  `https://192.168.…:5173/?setup`): för oss i teamet. Här spelas poser in, och
+  skrivandet är alltid på utan röst.
+
+Röststyrningen använder webbläsarens inbyggda taligenkänning (`src/voice.ts`).
+Den finns i Chrome och Safari men inte i Firefox, och kräver mikrofon och
+internet eftersom ljudet tolkas hos Google respektive Apple.
+
 ## Så fungerar det
 
 1. **Spela in poser.** Under fliken *Spela in poser* väljer man en bokstav och
@@ -62,6 +76,7 @@ du inte skriver över någon annans poser.
 | `src/pose.ts` | Startar kameran och MediaPipe-modellen |
 | `src/classify.ts` | Normaliserar posen och hittar närmaste mall. Trösklarna `MAX_DISTANCE` och `MIN_MARGIN` justeras här |
 | `src/templates.ts` | Sparar, exporterar och importerar mallar. Listan över bokstäver och kontrollposer |
+| `src/voice.ts` | Röstkommandon via webbläsarens taligenkänning. Kommandoorden står i `COMMAND_WORDS` |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste
