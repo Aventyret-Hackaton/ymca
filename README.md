@@ -84,6 +84,12 @@ personens fil.
 Öppnar du appen på en ny enhet eller adress och fyller i samma namn, fortsätter
 du från din fil i repot.
 
+### Skicka
+
+Skicka-posen öppnar telefonens meddelandeapp med texten ifylld (`src/sms.ts`).
+Mottagare och Skicka väljs där, med skärmen. Öppnas inte appen av sig själv
+visas länken *Öppnades inte Meddelanden? Tryck här* under meddelandet.
+
 ## Koden
 
 | Fil | Innehåll |
@@ -93,6 +99,7 @@ du från din fil i repot.
 | `src/templates.ts` | Hämtar allas mallar, sparar de egna. Listan över bokstäver och kontrollposer |
 | `src/voice.ts` | Röstkommandon via webbläsarens taligenkänning. Kommandoorden står i `COMMAND_WORDS` |
 | `vite.config.ts` | Slår ihop `templates/*.json` till en fil för appen och tar emot Spara till repot |
+| `src/sms.ts` | Bygger `sms:`-adressen och öppnar meddelandeappen |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste
@@ -106,9 +113,10 @@ bokstav. Använd siffrorna för att justera trösklarna.
 
 Idéer och funktioner som inte är byggda än. Lägg till nya punkter här.
 
-- **Skicka till Slack.** `sendMessage()` i `src/main.ts` är en tom krok. Lägg
+- **Skicka till Slack.** `sendMessage()` i `src/main.ts` öppnar i dag ett SMS. Lägg
   webhook-adressen i en serverfunktion, inte i klienten.
-- **Skicka som SMS.** Inte byggt. En `sms:`-länk kräver ett tryck på skärmen.
+- **Skicka SMS utan att röra skärmen.** I dag väljs mottagare och Skicka i
+  meddelandeappen. Helt utan skärm kräver en SMS-tjänst som 46elks eller Twilio.
 - **Lägga upp appen på en HTTPS-adress.**
 - **Kaloriräknare**
 - **Design**

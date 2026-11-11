@@ -250,3 +250,11 @@ body.setup .user-only {
   font: inherit;
   font-size: 1rem;
 }
+
+.sms-link {
+  width: 100%;
+  margin-bottom: 8px;
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
