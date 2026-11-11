@@ -25,6 +25,7 @@ import {
   toFileName,
   type SharedTemplates,
 } from "./templates";
+import { isVoiceSupported, listenForCommands, type VoiceCommand } from "./voice";
 
 /** How long a pose must be held before it counts. */
 const HOLD_MS = 1500;
@@ -70,8 +71,21 @@ function setOwnTemplates(next: Template[]): void {
   saveOwnTemplates(own);
   refreshTemplates();
 }
-let mode: "write" | "record" = "write";
 let message = "";
+
+/**
+ * Setup mode (the settings page, ?setup in the address) is for the team:
+ * poses are recorded there and nothing is written. Without it the app runs in
+ * user mode, where recording is unavailable and writing is switched on by voice.
+ */
+const setupMode = new URLSearchParams(location.search).has("setup");
+/** User mode only: whether poses are currently turned into text. */
+let writing = false;
+/** Set when voice control cannot work, e.g. the microphone was denied. */
+let voiceProblem = "";
+/** When the app last finished talking, to avoid hearing its own voice as a command. */
+let spokeAt = 0;
+const OWN_VOICE_GUARD_MS = 700;
 
 // Hold-to-confirm state.
 let candidate: string | null = null;
@@ -87,12 +101,12 @@ function speak(text: string): void {
   if (!("speechSynthesis" in window)) return;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "sv-SE";
+  utterance.onend = () => (spokeAt = performance.now());
   speechSynthesis.speak(utterance);
 }
 
 function renderMessage(): void {
   messageEl.textContent = message;
-  $<HTMLAnchorElement>("sms-link").href = `sms:?&body=${encodeURIComponent(message)}`;
 }
 
 /** Hook for the team: post to Slack via a server function here. */
@@ -102,11 +116,30 @@ function sendMessage(): void {
   statusEl.textContent = `Skicka är inte kopplat än. Meddelande: ${message}`;
 }
 
+function handleVoiceCommand(command: VoiceCommand): void {
+  const talking = "speechSynthesis" in window && speechSynthesis.speaking;
+  if (talking || performance.now() - spokeAt < OWN_VOICE_GUARD_MS) return;
+  if (command === "start" && !writing) {
+    writing = true;
+    speak("Skriv ditt meddelande");
+  } else if (command === "stop" && writing) {
+    writing = false;
+    speak("Pausat");
+  } else if (command === "clear") {
+    message = "";
+    renderMessage();
+    speak("Rensat");
+  }
+}
+
 function confirm(label: string): void {
   if (label === SPACE) message += " ";
   else if (label === BACKSPACE) message = message.slice(0, -1);
-  else if (label === SEND) sendMessage();
-  else message += label;
+  else if (label === SEND) {
+    sendMessage();
+    // A new message has to be started by voice again.
+    writing = false;
+  } else message += label;
   if (label !== SEND) speak(label.toLowerCase());
   navigator.vibrate?.(100);
   renderMessage();
@@ -186,8 +219,24 @@ function drawBadge(text: string, progress: number): void {
   ctx.fillText(text, cx, cy);
 }
 
+/** Large text across the bottom of the picture, readable from a few metres away. */
+function drawBanner(text: string): void {
+  const height = canvas.height * 0.16;
+  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.fillRect(0, canvas.height - height, canvas.width, height);
+  ctx.fillStyle = "#ffd23f";
+  ctx.font = `700 ${Math.min(height * 0.5, canvas.width / (text.length * 0.62))}px system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, canvas.width / 2, canvas.height - height / 2);
+}
+
 function describe(match: Match | null, confident: boolean): string {
-  if (templates.length === 0) return "Inga mallar än. Spela in poser under fliken Spela in poser.";
+  if (templates.length === 0) {
+    return setupMode
+      ? "Inga mallar än. Välj en bokstav nedan och spela in."
+      : "Inga poser är inspelade än, så appen kan inte känna igen bokstäver.";
+  }
   if (!match) return "Ingen kropp i bild.";
   const runnerUp = match.runnerUp
     ? `, näst närmast ${match.runnerUp.label} (${match.runnerUp.distance.toFixed(2)})`
@@ -217,14 +266,26 @@ function frame(): void {
     return;
   }
 
+  if (setupMode) {
+    // The settings page only previews what the templates recognise.
+    const match = feature ? nearest(feature, templates) : null;
+    const confident = match !== null && isConfident(match);
+    if (confident) drawBadge(match.label, 0);
+    statusEl.textContent = describe(match, confident);
+    return;
+  }
+
+  if (!writing) {
+    updateHold(null, now);
+    drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");
+    statusEl.textContent = voiceProblem || "Lyssnar. Säg ”starta” för att börja skriva.";
+    return;
+  }
+
   const match = feature ? nearest(feature, templates) : null;
   const confident = match !== null && isConfident(match);
-  if (mode === "write") {
-    const progress = updateHold(confident ? match.label : null, now);
-    if (confident) drawBadge(match.label, progress);
-  } else if (confident) {
-    drawBadge(match.label, 0);
-  }
+  const progress = updateHold(confident ? match.label : null, now);
+  if (confident) drawBadge(match.label, progress);
   statusEl.textContent = describe(match, confident);
 }
 
@@ -254,20 +315,6 @@ function renderLabels(): void {
 }
 
 function setUpControls(): void {
-  for (const tab of document.querySelectorAll<HTMLButtonElement>(".tabs button")) {
-    tab.addEventListener("click", () => {
-      mode = tab.dataset.tab as typeof mode;
-      for (const other of document.querySelectorAll(".tabs button")) other.classList.toggle("active", other === tab);
-      $("tab-write").hidden = mode !== "write";
-      $("tab-record").hidden = mode !== "record";
-    });
-  }
-
-  $("clear-btn").addEventListener("click", () => {
-    message = "";
-    renderMessage();
-  });
-
   $("record-btn").addEventListener("click", () => {
     const startsAt = performance.now() + RECORD_COUNTDOWN_MS;
     recording = { label: selectedLabel, startsAt, endsAt: startsAt + RECORD_SAMPLE_MS, samples: [] };
@@ -329,6 +376,10 @@ function setUpControls(): void {
 
 $("start-btn").addEventListener("click", async () => {
   const startStatus = $("start-status");
+  if (!setupMode && !isVoiceSupported()) {
+    startStatus.textContent = "Den här webbläsaren saknar röststyrning. Använd Chrome eller Safari.";
+    return;
+  }
   $<HTMLButtonElement>("start-btn").disabled = true;
   // Speech must be unlocked from a tap on iOS.
   speak("");
@@ -345,8 +396,19 @@ $("start-btn").addEventListener("click", async () => {
   }
   $("start").hidden = true;
   $("app").hidden = false;
-  setUpControls();
+  if (setupMode) {
+    setUpControls();
+  } else {
+    listenForCommands(handleVoiceCommand, () => {
+      voiceProblem = "Mikrofonen är blockerad. Tillåt mikrofonen för sidan och ladda om.";
+    });
+  }
+  // Both modes match against everyone's templates.
   refreshTemplates();
   renderMessage();
   requestAnimationFrame(frame);
 });
+
+// The start screen and controls differ between the two modes.
+document.body.classList.toggle("setup", setupMode);
+$("start-btn").textContent = setupMode ? "Starta kameran" : "Godkänn och starta";
