@@ -57,18 +57,24 @@ spegelvända från sitt eget håll, och kamerabilden visas ospeglad.
 
 ### Dela mallar i teamet
 
-Mallar sparas i webbläsaren på den enhet där de spelades in. `public/templates.json`
-är den delade uppsättningen, som används av alla som inte har egna mallar sparade.
+Varje person har en egen fil, `templates/<namn>.json`, så att ingen ändrar i
+någon annans fil och vi slipper konflikter. Appen matchar mot allas mallar
+tillsammans.
 
-- **Spara till repot** (syns bara mot utvecklingsservern): skriver enhetens
-  mallar direkt till `public/templates.json` på datorn som kör `npm run dev`
-  eller `npm run dev:phone`. Checka sedan in och pusha filen.
-- **Exportera mallar:** laddar ner samma fil till enheten, om du hellre flyttar
-  den för hand.
+1. Fyll i ditt namn under *Spela in poser*. Det blir filnamnet (`Åsa K` blir
+   `asa-k`).
+2. Spela in poser. De sparas i webbläsaren på enheten.
+3. Tryck på **Spara till repot** (syns bara mot utvecklingsservern). Dina mallar
+   skrivs till `templates/<namn>.json` på datorn som kör `npm run dev` eller
+   `npm run dev:phone`.
+4. Checka in och pusha din fil.
 
-Spara till repot ersätter hela filen med enhetens mallar. Hämta därför senaste
-`main` och börja från den delade uppsättningen innan du spelar in fler, så att
-du inte skriver över någon annans poser.
+Siffrorna på bokstavsknapparna visar *egna + andras* mallar. Ta bort, importera
+och exportera gäller bara dina egna. En annan persons mall ändras i den
+personens fil.
+
+Öppnar du appen på en ny enhet eller adress och fyller i samma namn, fortsätter
+du från din fil i repot.
 
 ## Koden
 
@@ -76,8 +82,9 @@ du inte skriver över någon annans poser.
 |---|---|
 | `src/pose.ts` | Startar kameran och MediaPipe-modellen |
 | `src/classify.ts` | Normaliserar posen och hittar närmaste mall. Trösklarna `MAX_DISTANCE` och `MIN_MARGIN` justeras här |
-| `src/templates.ts` | Sparar, exporterar och importerar mallar. Listan över bokstäver och kontrollposer |
+| `src/templates.ts` | Hämtar allas mallar, sparar de egna. Listan över bokstäver och kontrollposer |
 | `src/voice.ts` | Röstkommandon via webbläsarens taligenkänning. Kommandoorden står i `COMMAND_WORDS` |
+| `vite.config.ts` | Slår ihop `templates/*.json` till en fil för appen och tar emot Spara till repot |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste

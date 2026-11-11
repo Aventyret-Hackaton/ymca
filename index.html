@@ -50,6 +50,9 @@
       </section>
 
       <section id="tab-record" hidden>
+        <label class="field">Ditt namn (blir filnamnet i repot)
+          <input id="name-input" type="text" autocomplete="off" autocapitalize="off" placeholder="t.ex. clara" />
+        </label>
         <div id="labels" class="labels"></div>
         <div class="row">
           <button id="record-btn" class="primary">Spela in vald pose</button>
@@ -57,10 +60,10 @@
         </div>
         <div class="row">
           <button id="repo-btn" hidden>Spara till repot</button>
-          <button id="export-btn">Exportera mallar</button>
-          <label class="button">Importera mallar<input id="import-input" type="file" accept="application/json" hidden /></label>
+          <button id="export-btn">Exportera mina mallar</button>
+          <label class="button">Importera mina mallar<input id="import-input" type="file" accept="application/json" hidden /></label>
         </div>
-        <p class="hint">Välj en bokstav, tryck på Spela in och ställ dig i posen innan nedräkningen är slut. Spela gärna in samma bokstav flera gånger, med olika personer.</p>
+        <p class="hint">Välj en bokstav, tryck på Spela in och ställ dig i posen innan nedräkningen är slut. Siffrorna visar dina egna mallar + andras. Du kan bara ändra dina egna.</p>
       </section>
       <p class="setup-only"><a href="./">← Tillbaka till användarläget</a></p>
     </main>
