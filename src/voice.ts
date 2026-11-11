@@ -23,6 +23,7 @@ interface Recognition {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  onstart: (() => void) | null;
   onresult: ((event: RecognitionEvent) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
@@ -52,56 +53,86 @@ export function findCommand(transcript: string): VoiceCommand | null {
   return null;
 }
 
+export interface VoiceHandlers {
+  onCommand(command: VoiceCommand): void;
+  /** The browser has started listening (again). */
+  onListening(): void;
+  /** Everything the recogniser heard, command or not. Useful to see why a word is missed. */
+  onHeard(transcript: string): void;
+  /**
+   * Something went wrong. `fatal` means listening has stopped for good, for
+   * example because the microphone or the device's dictation is switched off.
+   */
+  onError(code: string, fatal: boolean): void;
+}
+
+/** Errors that will not go away by trying again. */
+const FATAL_ERRORS = ["not-allowed", "service-not-allowed", "language-not-supported", "audio-capture"];
+/** Errors that are part of normal operation and not worth reporting. */
+const QUIET_ERRORS = ["no-speech", "aborted"];
+const RETRY_DELAY_MS = 1000;
+
 /**
  * Listens until the page is closed. Browsers end a recognition session after
- * a while (iOS after every phrase), so it is restarted whenever it ends.
- * `onBlocked` is called if the microphone is denied; listening then stops.
+ * a while (Safari after every phrase), so it is restarted whenever it ends.
+ *
+ * Call this directly from a tap or click: Safari may refuse to start speech
+ * recognition, or to ask for the microphone, outside a user gesture.
  */
-export function listenForCommands(
-  onCommand: (command: VoiceCommand) => void,
-  onBlocked: (reason: string) => void,
-): void {
+export function listenForCommands(handlers: VoiceHandlers): void {
   const Ctor = getConstructor();
-  if (!Ctor) return onBlocked("unsupported");
+  if (!Ctor) return handlers.onError("unsupported", true);
 
   const recognition = new Ctor();
   recognition.lang = "sv-SE";
   recognition.continuous = true;
   recognition.interimResults = true;
 
-  let blocked = false;
+  let stopped = false;
+  let running = false;
   let lastCommand: VoiceCommand | null = null;
   let lastCommandAt = 0;
 
+  recognition.onstart = () => {
+    running = true;
+    handlers.onListening();
+  };
+
   recognition.onresult = (event) => {
     for (let i = event.resultIndex; i < event.results.length; i++) {
-      const command = findCommand(event.results[i][0].transcript);
+      const transcript = event.results[i][0].transcript;
+      handlers.onHeard(transcript);
+      const command = findCommand(transcript);
       if (!command) continue;
       const now = performance.now();
       if (command === lastCommand && now - lastCommandAt < COOLDOWN_MS) continue;
       lastCommand = command;
       lastCommandAt = now;
-      onCommand(command);
+      handlers.onCommand(command);
     }
   };
 
   recognition.onerror = (event) => {
-    // "no-speech" and "aborted" are normal; only a denied microphone is fatal.
-    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-      blocked = true;
-      onBlocked(event.error);
-    }
+    if (QUIET_ERRORS.includes(event.error)) return;
+    const fatal = FATAL_ERRORS.includes(event.error);
+    if (fatal) stopped = true;
+    handlers.onError(event.error, fatal);
   };
 
   const start = () => {
+    if (stopped || running) return;
     try {
       recognition.start();
-    } catch {
-      // Already running.
+    } catch (error) {
+      // Safari throws if the previous session has not fully ended yet. Report
+      // it and try again, instead of going silent for good.
+      handlers.onError(`start: ${(error as Error).message}`, false);
+      setTimeout(start, RETRY_DELAY_MS);
     }
   };
   recognition.onend = () => {
-    if (!blocked) setTimeout(start, RESTART_DELAY_MS);
+    running = false;
+    setTimeout(start, RESTART_DELAY_MS);
   };
   start();
 }
