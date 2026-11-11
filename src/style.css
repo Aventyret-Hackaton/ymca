@@ -304,6 +304,14 @@ body.setup .user-only {
   font-size: 1rem;
 }
 
+.sms-link {
+  width: 100%;
+  margin-bottom: 8px;
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* User-mode instructions under the message. */
 .guide {
   margin-top: 8px;

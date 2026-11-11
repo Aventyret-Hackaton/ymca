@@ -26,6 +26,7 @@ import {
   toFileName,
   type SharedTemplates,
 } from "./templates";
+import { openSms } from "./sms";
 import { isVoiceSupported, listenForCommands, type VoiceCommand } from "./voice";
 
 /** How long a pose must be held before it counts. */
@@ -47,6 +48,7 @@ const canvas = $<HTMLCanvasElement>("stage");
 const ctx = canvas.getContext("2d")!;
 const messageEl = $("message");
 const statusEl = $("status");
+const smsLink = $<HTMLAnchorElement>("sms-link");
 
 let landmarker: PoseLandmarker;
 /** The person's file name in the repo: templates/<name>.json. Empty until they enter it. */
@@ -128,11 +130,18 @@ function renderMessage(): void {
   messageEl.textContent = message;
 }
 
-/** Hook for the team: post to Slack via a server function here. */
+/**
+ * Sends the message as an SMS by opening the phone's messaging app with the
+ * text filled in. Choosing a recipient and pressing Send happens there.
+ */
 function sendMessage(): void {
-  if (!message.trim()) return;
-  speak(`Skickar: ${message}`);
-  statusEl.textContent = `Skicka är inte kopplat än. Meddelande: ${message}`;
+  const text = message.trim();
+  if (!text) {
+    speak("Det finns inget att skicka");
+    return;
+  }
+  speak("Öppnar meddelanden");
+  openSms(text, smsLink);
 }
 
 function handleVoiceCommand(command: VoiceCommand): void {
@@ -140,6 +149,7 @@ function handleVoiceCommand(command: VoiceCommand): void {
   if (talking || performance.now() - spokeAt < OWN_VOICE_GUARD_MS) return;
   if (command === "start" && !writing) {
     writing = true;
+    smsLink.hidden = true;
     speak("Skriv ditt meddelande");
   } else if (command === "stop" && writing) {
     writing = false;
