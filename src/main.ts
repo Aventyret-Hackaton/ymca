@@ -16,9 +16,14 @@ import {
   SPACE,
   exportTemplates,
   importTemplates,
-  loadTemplates,
-  saveTemplates,
+  loadName,
+  loadOwnTemplates,
+  loadSharedTemplates,
+  saveName,
+  saveOwnTemplates,
   saveTemplatesToRepo,
+  toFileName,
+  type SharedTemplates,
 } from "./templates";
 
 /** How long a pose must be held before it counts. */
@@ -39,7 +44,32 @@ const messageEl = $("message");
 const statusEl = $("status");
 
 let landmarker: PoseLandmarker;
+/** The person's file name in the repo: templates/<name>.json. Empty until they enter it. */
+let name = loadName();
+/** Templates recorded on this device. The only ones that can be changed here. */
+let own: Template[] = [];
+/** Everyone's committed templates, by file name. */
+let shared: SharedTemplates = {};
+/** What poses are matched against: own templates plus everyone else's. */
 let templates: Template[] = [];
+
+function othersTemplates(): Template[] {
+  return Object.entries(shared)
+    .filter(([person]) => person !== name)
+    .flatMap(([, list]) => list);
+}
+
+/** Call after `own`, `shared` or `name` changes. */
+function refreshTemplates(): void {
+  templates = [...own, ...othersTemplates()];
+  renderLabels();
+}
+
+function setOwnTemplates(next: Template[]): void {
+  own = next;
+  saveOwnTemplates(own);
+  refreshTemplates();
+}
 let mode: "write" | "record" = "write";
 let message = "";
 
@@ -114,9 +144,7 @@ function updateRecording(feature: Feature | null, now: number): void {
     speak("Försök igen");
     return;
   }
-  templates.push({ label, points: averageFeatures(samples) });
-  saveTemplates(templates);
-  renderLabels();
+  setOwnTemplates([...own, { label, points: averageFeatures(samples) }]);
   statusEl.textContent = `Sparade en mall för ${label}.`;
   speak("Sparad");
 }
@@ -202,16 +230,18 @@ function frame(): void {
 
 function renderLabels(): void {
   const container = $("labels");
+  const others = othersTemplates();
+  const count = (list: Template[], label: string) => list.filter((t) => t.label === label).length;
   container.replaceChildren(
     ...LABELS.map((label) => {
-      const count = templates.filter((t) => t.label === label).length;
       const button = document.createElement("button");
       button.className = label === selectedLabel ? "selected" : "";
       button.append(LABEL_ICONS[label] ?? label);
       const small = document.createElement("small");
-      small.textContent = `${count} st`;
+      // Own templates + everyone else's.
+      small.textContent = `${count(own, label)} + ${count(others, label)}`;
       button.append(small);
-      button.title = label;
+      button.title = `${label}: ${count(own, label)} egna, ${count(others, label)} från andra`;
       button.addEventListener("click", () => {
         selectedLabel = label;
         renderLabels();
@@ -220,7 +250,7 @@ function renderLabels(): void {
     }),
   );
   $("record-btn").textContent = `Spela in ${selectedLabel}`;
-  $("delete-btn").textContent = `Ta bort mallar för ${selectedLabel}`;
+  $("delete-btn").textContent = `Ta bort mina mallar för ${selectedLabel}`;
 }
 
 function setUpControls(): void {
@@ -246,22 +276,36 @@ function setUpControls(): void {
   });
 
   $("delete-btn").addEventListener("click", () => {
-    templates = templates.filter((t) => t.label !== selectedLabel);
-    saveTemplates(templates);
-    renderLabels();
+    setOwnTemplates(own.filter((t) => t.label !== selectedLabel));
   });
 
-  $("export-btn").addEventListener("click", () => exportTemplates(templates));
+  const nameInput = $<HTMLInputElement>("name-input");
+  nameInput.value = name;
+  nameInput.addEventListener("change", () => {
+    name = toFileName(nameInput.value);
+    nameInput.value = name;
+    saveName(name);
+    // Nothing recorded on this device yet: start from this person's file in the repo.
+    if (loadOwnTemplates() === null) own = shared[name] ?? [];
+    refreshTemplates();
+  });
+
+  $("export-btn").addEventListener("click", () => exportTemplates(own, name));
 
   // Only the dev server can write to the repo; the built app has no such endpoint.
   if (import.meta.env.DEV) {
     const repoBtn = $<HTMLButtonElement>("repo-btn");
     repoBtn.hidden = false;
     repoBtn.addEventListener("click", async () => {
+      if (!name) {
+        statusEl.textContent = "Fyll i ditt namn först. Det blir filnamnet i repot.";
+        nameInput.focus();
+        return;
+      }
       repoBtn.disabled = true;
       try {
-        await saveTemplatesToRepo(templates);
-        statusEl.textContent = `Sparade ${templates.length} mallar till public/templates.json på datorn. Checka in filen.`;
+        await saveTemplatesToRepo(own, name);
+        statusEl.textContent = `Sparade ${own.length} mallar till templates/${name}.json på datorn. Checka in filen.`;
       } catch (error) {
         statusEl.textContent = `Kunde inte spara till repot: ${(error as Error).message}`;
       }
@@ -275,10 +319,8 @@ function setUpControls(): void {
     input.value = "";
     if (!file) return;
     try {
-      templates = await importTemplates(file);
-      saveTemplates(templates);
-      renderLabels();
-      statusEl.textContent = `Importerade ${templates.length} mallar.`;
+      setOwnTemplates(await importTemplates(file));
+      statusEl.textContent = `Importerade ${own.length} mallar som dina egna.`;
     } catch (error) {
       statusEl.textContent = `Kunde inte importera: ${(error as Error).message}`;
     }
@@ -294,7 +336,8 @@ $("start-btn").addEventListener("click", async () => {
     startStatus.textContent = "Startar kameran…";
     await startCamera(video);
     startStatus.textContent = "Laddar kroppsmodellen…";
-    [landmarker, templates] = await Promise.all([createPoseLandmarker(), loadTemplates()]);
+    [landmarker, shared] = await Promise.all([createPoseLandmarker(), loadSharedTemplates()]);
+    own = loadOwnTemplates() ?? shared[name] ?? [];
   } catch (error) {
     startStatus.textContent = `Det gick inte att starta: ${(error as Error).message}`;
     $<HTMLButtonElement>("start-btn").disabled = false;
@@ -303,7 +346,7 @@ $("start-btn").addEventListener("click", async () => {
   $("start").hidden = true;
   $("app").hidden = false;
   setUpControls();
-  renderLabels();
+  refreshTemplates();
   renderMessage();
   requestAnimationFrame(frame);
 });
