@@ -33,7 +33,10 @@
       <canvas id="stage"></canvas>
 
       <!-- Settings: directly under the picture, so recording needs no scrolling. -->
-      <button id="record-btn" class="primary setup-only record-main">Spela in vald pose</button>
+      <div class="record-row setup-only">
+        <button id="record-btn" class="primary">Spela in vald pose</button>
+        <button id="undo-btn" disabled>Ta bort senaste</button>
+      </div>
 
       <p id="message" class="user-only" aria-live="polite"></p>
       <p id="status" role="status"></p>
