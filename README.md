@@ -26,6 +26,14 @@ npm run dev:phone
 Öppna `Network`-adressen (`https://192.168.…`) på en telefon i samma nätverk och
 godkänn varningen om det självsignerade certifikatet.
 
+### Publicerad version
+
+Appen ligger på <https://aventyret-hackaton.github.io/ymca/>. Varje push till
+`main` bygger och publicerar den på nytt via GitHub Actions
+(`.github/workflows/deploy.yml`). Mallarna i `templates/` byggs in, så nya
+poser syns där först när filen är pushad. *Spara till repot* finns bara mot
+utvecklingsservern, inte i den publicerade versionen.
+
 ## Två lägen
 
 - **Användarläge** (vanliga adressen): ingen inspelning och inga knappar efter
@@ -96,4 +104,3 @@ bokstav. Använd siffrorna för att justera trösklarna.
   webhook-adressen i en serverfunktion, inte i klienten.
 - Skicka som SMS är inte byggt. En `sms:`-länk kräver ett tryck på skärmen.
 - Bestämma alternativ till de svåraste bokstäverna (golvposer, U och V).
-- Lägga upp appen på en HTTPS-adress.
