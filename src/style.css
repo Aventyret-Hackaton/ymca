@@ -123,19 +123,14 @@ body {
   font-size: 0.9rem;
 }
 
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+.record-main {
+  width: 100%;
+  margin-top: 12px;
+  font-size: 1.1rem;
 }
 
-.tabs button {
-  flex: 1;
-}
-
-.tabs button.active {
-  border-color: var(--accent);
-  color: var(--accent);
+body.setup #status {
+  margin-top: 8px;
 }
 
 .row {

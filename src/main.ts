@@ -71,17 +71,16 @@ function setOwnTemplates(next: Template[]): void {
   saveOwnTemplates(own);
   refreshTemplates();
 }
-let mode: "write" | "record" = "write";
 let message = "";
 
 /**
- * Setup mode (add ?setup to the address) is for the team: poses can be
- * recorded and writing is always on. Without it the app runs in user mode,
- * where recording is unavailable and writing is switched on by voice.
+ * Setup mode (the settings page, ?setup in the address) is for the team:
+ * poses are recorded there and nothing is written. Without it the app runs in
+ * user mode, where recording is unavailable and writing is switched on by voice.
  */
 const setupMode = new URLSearchParams(location.search).has("setup");
-/** Whether poses are currently turned into text. */
-let writing = setupMode;
+/** User mode only: whether poses are currently turned into text. */
+let writing = false;
 /** Set when voice control cannot work, e.g. the microphone was denied. */
 let voiceProblem = "";
 /** When the app last finished talking, to avoid hearing its own voice as a command. */
@@ -108,7 +107,6 @@ function speak(text: string): void {
 
 function renderMessage(): void {
   messageEl.textContent = message;
-  $<HTMLAnchorElement>("sms-link").href = `sms:?&body=${encodeURIComponent(message)}`;
 }
 
 /** Hook for the team: post to Slack via a server function here. */
@@ -139,8 +137,8 @@ function confirm(label: string): void {
   else if (label === BACKSPACE) message = message.slice(0, -1);
   else if (label === SEND) {
     sendMessage();
-    // In user mode a new message has to be started by voice again.
-    if (!setupMode) writing = false;
+    // A new message has to be started by voice again.
+    writing = false;
   } else message += label;
   if (label !== SEND) speak(label.toLowerCase());
   navigator.vibrate?.(100);
@@ -236,7 +234,7 @@ function drawBanner(text: string): void {
 function describe(match: Match | null, confident: boolean): string {
   if (templates.length === 0) {
     return setupMode
-      ? "Inga mallar än. Spela in poser under fliken Spela in poser."
+      ? "Inga mallar än. Välj en bokstav nedan och spela in."
       : "Inga poser är inspelade än, så appen kan inte känna igen bokstäver.";
   }
   if (!match) return "Ingen kropp i bild.";
@@ -268,6 +266,15 @@ function frame(): void {
     return;
   }
 
+  if (setupMode) {
+    // The settings page only previews what the templates recognise.
+    const match = feature ? nearest(feature, templates) : null;
+    const confident = match !== null && isConfident(match);
+    if (confident) drawBadge(match.label, 0);
+    statusEl.textContent = describe(match, confident);
+    return;
+  }
+
   if (!writing) {
     updateHold(null, now);
     drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");
@@ -277,12 +284,8 @@ function frame(): void {
 
   const match = feature ? nearest(feature, templates) : null;
   const confident = match !== null && isConfident(match);
-  if (mode === "write") {
-    const progress = updateHold(confident ? match.label : null, now);
-    if (confident) drawBadge(match.label, progress);
-  } else if (confident) {
-    drawBadge(match.label, 0);
-  }
+  const progress = updateHold(confident ? match.label : null, now);
+  if (confident) drawBadge(match.label, progress);
   statusEl.textContent = describe(match, confident);
 }
 
@@ -312,20 +315,6 @@ function renderLabels(): void {
 }
 
 function setUpControls(): void {
-  for (const tab of document.querySelectorAll<HTMLButtonElement>(".tabs button")) {
-    tab.addEventListener("click", () => {
-      mode = tab.dataset.tab as typeof mode;
-      for (const other of document.querySelectorAll(".tabs button")) other.classList.toggle("active", other === tab);
-      $("tab-write").hidden = mode !== "write";
-      $("tab-record").hidden = mode !== "record";
-    });
-  }
-
-  $("clear-btn").addEventListener("click", () => {
-    message = "";
-    renderMessage();
-  });
-
   $("record-btn").addEventListener("click", () => {
     const startsAt = performance.now() + RECORD_COUNTDOWN_MS;
     recording = { label: selectedLabel, startsAt, endsAt: startsAt + RECORD_SAMPLE_MS, samples: [] };

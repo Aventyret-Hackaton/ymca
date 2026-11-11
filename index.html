@@ -32,30 +32,23 @@
       <video id="video" playsinline muted autoplay></video>
       <canvas id="stage"></canvas>
 
-      <p id="message" aria-live="polite"></p>
+      <!-- Settings: directly under the picture, so recording needs no scrolling. -->
+      <button id="record-btn" class="primary setup-only record-main">Spela in vald pose</button>
+
+      <p id="message" class="user-only" aria-live="polite"></p>
       <p id="status" role="status"></p>
 
-      <nav class="tabs setup-only">
-        <button data-tab="write" class="active">Skriv</button>
-        <button data-tab="record">Spela in poser</button>
-      </nav>
-
-      <section id="tab-write">
-        <div class="row setup-only">
-          <button id="clear-btn">Rensa</button>
-          <a id="sms-link" class="button" href="sms:">Öppna som SMS</a>
-        </div>
+      <section class="user-only">
         <p class="hint">Håll en pose stilla tills ringen fyllts. Släpp posen innan du gör samma bokstav igen.</p>
-        <p class="hint user-only">Röstkommandon: starta, stopp, rensa.</p>
+        <p class="hint">Röstkommandon: starta, stopp, rensa.</p>
       </section>
 
-      <section id="tab-record" hidden>
+      <section class="setup-only">
         <label class="field">Ditt namn (blir filnamnet i repot)
           <input id="name-input" type="text" autocomplete="off" autocapitalize="off" placeholder="t.ex. clara" />
         </label>
         <div id="labels" class="labels"></div>
         <div class="row">
-          <button id="record-btn" class="primary">Spela in vald pose</button>
           <button id="delete-btn">Ta bort valda posens mallar</button>
         </div>
         <div class="row">

@@ -34,8 +34,8 @@ godkänn varningen om det självsignerade certifikatet.
   skicka-posen krävs ett nytt *starta*.
 - **Inspelningsläge** (kugghjulet uppe till höger på startsidan, eller `?setup`
   i adressen): för oss i teamet. Ingen inloggning, så vem som helst som hittar
-  knappen kommer in. Här spelas poser in, och
-  skrivandet är alltid på utan röst.
+  knappen kommer in. Här spelas poser in. Inget skrivs, men en igenkänd pose
+  visas i bildens hörn så att man kan kontrollera sina mallar.
 
 Röststyrningen använder webbläsarens inbyggda taligenkänning (`src/voice.ts`).
 Den finns i Chrome och Safari men inte i Firefox, och kräver mikrofon och
@@ -43,10 +43,10 @@ internet eftersom ljudet tolkas hos Google respektive Apple.
 
 ## Så fungerar det
 
-1. **Spela in poser.** Under fliken *Spela in poser* väljer man en bokstav och
+1. **Spela in poser.** I inställningarna väljer man en bokstav och
    trycker på Spela in. Efter fem sekunders nedräkning sparas posen som en mall.
    Spela in varje bokstav några gånger, gärna med olika personer.
-2. **Skriv.** Under fliken *Skriv* jämförs den aktuella posen med alla mallar.
+2. **Skriv.** I användarläget jämförs den aktuella posen med alla mallar.
    Håller man en igenkänd pose i 1,5 sekunder läggs bokstaven till, läses upp
    och telefonen vibrerar. Posen måste släppas innan samma bokstav kan komma igen.
 3. **Kontrollposer.** `MELLANSLAG` (␣), `SUDDA` (⌫) och `SKICKA` (✉) spelas in
@@ -61,7 +61,7 @@ Varje person har en egen fil, `templates/<namn>.json`, så att ingen ändrar i
 någon annans fil och vi slipper konflikter. Appen matchar mot allas mallar
 tillsammans.
 
-1. Fyll i ditt namn under *Spela in poser*. Det blir filnamnet (`Åsa K` blir
+1. Fyll i ditt namn i inställningarna. Det blir filnamnet (`Åsa K` blir
    `asa-k`).
 2. Spela in poser. De sparas i webbläsaren på enheten.
 3. Tryck på **Spara till repot** (syns bara mot utvecklingsservern). Dina mallar
@@ -94,6 +94,6 @@ bokstav. Använd siffrorna för att justera trösklarna.
 
 - Skicka till Slack: `sendMessage()` i `src/main.ts` är en tom krok. Lägg
   webhook-adressen i en serverfunktion, inte i klienten.
-- SMS öppnas i dag via en `sms:`-länk som kräver ett tryck på skärmen.
+- Skicka som SMS är inte byggt. En `sms:`-länk kräver ett tryck på skärmen.
 - Bestämma alternativ till de svåraste bokstäverna (golvposer, U och V).
 - Lägga upp appen på en HTTPS-adress.
