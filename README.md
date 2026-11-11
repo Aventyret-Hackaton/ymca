@@ -69,6 +69,9 @@ tillsammans.
    `npm run dev:phone`.
 4. Checka in och pusha din fil.
 
+Blev en inspelning fel? **Ta bort senaste** bredvid inspelningsknappen tar bort
+den mall du senast spelade in.
+
 Siffrorna på bokstavsknapparna visar *egna + andras* mallar. Ta bort, importera
 och exportera gäller bara dina egna. En annan persons mall ändras i den
 personens fil.

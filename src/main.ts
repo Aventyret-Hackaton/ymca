@@ -105,6 +105,19 @@ function speak(text: string): void {
   speechSynthesis.speak(utterance);
 }
 
+/** How long a note stays in the status line before the live status returns. */
+const NOTE_MS = 4000;
+let noteUntil = 0;
+
+/**
+ * Shows a message in the status line of the settings page. The live status
+ * is redrawn every frame and would otherwise overwrite it immediately.
+ */
+function statusNote(text: string): void {
+  statusEl.textContent = text;
+  noteUntil = performance.now() + NOTE_MS;
+}
+
 function renderMessage(): void {
   messageEl.textContent = message;
 }
@@ -173,12 +186,12 @@ function updateRecording(feature: Feature | null, now: number): void {
   recording = null;
   $<HTMLButtonElement>("record-btn").disabled = false;
   if (samples.length === 0) {
-    statusEl.textContent = "Ingen kropp syntes. Se till att hela kroppen är i bild och försök igen.";
+    statusNote("Ingen kropp syntes. Se till att hela kroppen är i bild och försök igen.");
     speak("Försök igen");
     return;
   }
   setOwnTemplates([...own, { label, points: averageFeatures(samples) }]);
-  statusEl.textContent = `Sparade en mall för ${label}.`;
+  statusNote(`Sparade en mall för ${label}.`);
   speak("Sparad");
 }
 
@@ -271,7 +284,7 @@ function frame(): void {
     const match = feature ? nearest(feature, templates) : null;
     const confident = match !== null && isConfident(match);
     if (confident) drawBadge(match.label, 0);
-    statusEl.textContent = describe(match, confident);
+    if (now >= noteUntil) statusEl.textContent = describe(match, confident);
     return;
   }
 
@@ -312,6 +325,11 @@ function renderLabels(): void {
   );
   $("record-btn").textContent = `Spela in ${selectedLabel}`;
   $("delete-btn").textContent = `Ta bort mina mallar för ${selectedLabel}`;
+  // "Latest" is the last template recorded on this device, whatever its letter.
+  const latest = own[own.length - 1];
+  const undoBtn = $<HTMLButtonElement>("undo-btn");
+  undoBtn.disabled = !latest;
+  undoBtn.textContent = latest ? `Ta bort senaste (${LABEL_ICONS[latest.label] ?? latest.label})` : "Ta bort senaste";
 }
 
 function setUpControls(): void {
@@ -320,6 +338,13 @@ function setUpControls(): void {
     recording = { label: selectedLabel, startsAt, endsAt: startsAt + RECORD_SAMPLE_MS, samples: [] };
     $<HTMLButtonElement>("record-btn").disabled = true;
     statusEl.textContent = `Ställ dig i posen för ${selectedLabel}…`;
+  });
+
+  $("undo-btn").addEventListener("click", () => {
+    const latest = own[own.length - 1];
+    if (!latest || recording) return;
+    setOwnTemplates(own.slice(0, -1));
+    statusNote(`Tog bort den senaste mallen för ${latest.label}.`);
   });
 
   $("delete-btn").addEventListener("click", () => {
@@ -345,16 +370,16 @@ function setUpControls(): void {
     repoBtn.hidden = false;
     repoBtn.addEventListener("click", async () => {
       if (!name) {
-        statusEl.textContent = "Fyll i ditt namn först. Det blir filnamnet i repot.";
+        statusNote("Fyll i ditt namn först. Det blir filnamnet i repot.");
         nameInput.focus();
         return;
       }
       repoBtn.disabled = true;
       try {
         await saveTemplatesToRepo(own, name);
-        statusEl.textContent = `Sparade ${own.length} mallar till templates/${name}.json på datorn. Checka in filen.`;
+        statusNote(`Sparade ${own.length} mallar till templates/${name}.json på datorn. Checka in filen.`);
       } catch (error) {
-        statusEl.textContent = `Kunde inte spara till repot: ${(error as Error).message}`;
+        statusNote(`Kunde inte spara till repot: ${(error as Error).message}`);
       }
       repoBtn.disabled = false;
     });
@@ -367,9 +392,9 @@ function setUpControls(): void {
     if (!file) return;
     try {
       setOwnTemplates(await importTemplates(file));
-      statusEl.textContent = `Importerade ${own.length} mallar som dina egna.`;
+      statusNote(`Importerade ${own.length} mallar som dina egna.`);
     } catch (error) {
-      statusEl.textContent = `Kunde inte importera: ${(error as Error).message}`;
+      statusNote(`Kunde inte importera: ${(error as Error).message}`);
     }
   });
 }

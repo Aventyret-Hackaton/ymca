@@ -123,9 +123,14 @@ body {
   font-size: 0.9rem;
 }
 
-.record-main {
-  width: 100%;
+.record-row {
+  display: flex;
+  gap: 8px;
   margin-top: 12px;
+}
+
+.record-row #record-btn {
+  flex: 1;
   font-size: 1.1rem;
 }
 
