@@ -29,6 +29,9 @@ import { isVoiceSupported, listenForCommands, type VoiceCommand } from "./voice"
 
 /** How long a pose must be held before it counts. */
 const HOLD_MS = 1500;
+/** Overlay colours on the camera picture, matching the sage theme in style.css. */
+const OVERLAY_ACCENT = "#7fd39a";
+const OVERLAY_BG = "rgba(31, 51, 40, 0.8)";
 /** Time to walk away from the phone and get into position before recording. */
 const RECORD_COUNTDOWN_MS = 5000;
 /** How long a recording samples the pose. */
@@ -142,6 +145,14 @@ function handleVoiceCommand(command: VoiceCommand): void {
     message = "";
     renderMessage();
     speak("Rensat");
+  } else if (command === "undo" && message) {
+    message = message.slice(0, -1);
+    renderMessage();
+    speak("Ångrat");
+  } else if (command === "send") {
+    sendMessage();
+    // A new message has to be started by voice again.
+    writing = false;
   }
 }
 
@@ -198,7 +209,7 @@ function updateRecording(feature: Feature | null, now: number): void {
 function drawSkeleton(landmarks: Landmarks): void {
   const { width, height } = canvas;
   ctx.lineWidth = Math.max(3, width / 200);
-  ctx.strokeStyle = "#ffd23f";
+  ctx.strokeStyle = OVERLAY_ACCENT;
   ctx.lineCap = "round";
   for (const { start, end } of CONNECTIONS) {
     const a = landmarks[start];
@@ -216,11 +227,11 @@ function drawBadge(text: string, progress: number): void {
   const r = Math.min(canvas.width, canvas.height) * 0.11;
   const cx = r * 1.4;
   const cy = r * 1.4;
-  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.fillStyle = OVERLAY_BG;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#ffd23f";
+  ctx.strokeStyle = OVERLAY_ACCENT;
   ctx.lineWidth = r * 0.16;
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
@@ -235,9 +246,9 @@ function drawBadge(text: string, progress: number): void {
 /** Large text across the bottom of the picture, readable from a few metres away. */
 function drawBanner(text: string): void {
   const height = canvas.height * 0.16;
-  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.fillStyle = OVERLAY_BG;
   ctx.fillRect(0, canvas.height - height, canvas.width, height);
-  ctx.fillStyle = "#ffd23f";
+  ctx.fillStyle = OVERLAY_ACCENT;
   ctx.font = `700 ${Math.min(height * 0.5, canvas.width / (text.length * 0.62))}px system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -249,6 +260,12 @@ function describe(match: Match | null, confident: boolean): string {
     return setupMode
       ? "Inga mallar än. Välj en bokstav nedan och spela in."
       : "Inga poser är inspelade än, så appen kan inte känna igen bokstäver.";
+  }
+  if (!setupMode) {
+    if (!match) return "Jag ser dig inte riktigt – backa ett steg så att hela du syns.";
+    return confident
+      ? `Snyggt – ${match.label}! Håll kvar …`
+      : "Hmm, vilken bokstav är det där? Gör posen lite tydligare.";
   }
   if (!match) return "Ingen kropp i bild.";
   const runnerUp = match.runnerUp
@@ -291,7 +308,7 @@ function frame(): void {
   if (!writing) {
     updateHold(null, now);
     drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");
-    statusEl.textContent = voiceProblem || "Lyssnar. Säg ”starta” för att börja skriva.";
+    statusEl.textContent = voiceProblem || "Jag lyssnar! Säg ”starta” när du är redo att röra på dig.";
     return;
   }
 

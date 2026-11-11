@@ -13,21 +13,23 @@
       <a class="corner-link setup-only" href="./">← Användarläge</a>
       <h1><img class="logo" src="/src/logo.png" alt="YMCA" width="612" height="284" /></h1>
       <p class="setup-only"><strong>Inställningar.</strong> Här spelar du in poser som appen ska känna igen.</p>
-      <p class="user-only">Skriv meddelanden med kroppen. Ställ telefonen lutad cirka tre meter bort så att hela kroppen syns.</p>
+      <p class="user-only">Helt onödigt. Fullkomligt underbart. Stava ditt meddelande med hela kroppen och få upp pulsen mellan mötena.</p>
       <div id="terms" class="user-only">
         <h2>Innan du börjar</h2>
         <ul>
+          <li>Ställ telefonen lutad cirka tre meter bort så att hela kroppen syns.</li>
           <li>Appen använder kameran för att se dina poser. Bilden bearbetas i din telefon och sparas eller skickas inte vidare.</li>
           <li>Appen använder mikrofonen för röstkommandon. Webbläsarens taligenkänning kan skicka ljudet till Google eller Apple för tolkning.</li>
-          <li>Meddelandet skickas bara när du själv gör skicka-posen.</li>
+          <li>Meddelandet skickas bara när du själv väljer att skicka det.</li>
         </ul>
-        <p>Säg <strong>starta</strong> för att börja skriva, <strong>stopp</strong> för att pausa och <strong>rensa</strong> för att börja om.</p>
+        <p>Säg <strong>starta</strong> för att börja skriva, <strong>stopp</strong> för att pausa, <strong>ångra</strong> för att ta bort senaste bokstaven, <strong>rensa</strong> för att börja om och <strong>skicka</strong> när du är klar.</p>
       </div>
       <button id="start-btn" class="primary">Godkänn och starta</button>
       <p id="start-status" role="status"></p>
     </div>
 
     <main id="app" hidden>
+      <a class="corner-link app-settings user-only" href="?setup" aria-label="Inställningar" title="Inställningar">⚙</a>
       <!-- The video is only a frame source; everything visible is drawn on the canvas. -->
       <video id="video" playsinline muted autoplay></video>
       <canvas id="stage"></canvas>
@@ -41,9 +43,19 @@
       <p id="message" class="user-only" aria-live="polite"></p>
       <p id="status" role="status"></p>
 
-      <section class="user-only">
-        <p class="hint">Håll en pose stilla tills ringen fyllts. Släpp posen innan du gör samma bokstav igen.</p>
-        <p class="hint">Röstkommandon: starta, stopp, rensa.</p>
+      <section class="user-only guide">
+        <ol class="steps">
+          <li><strong>Ställ dig i en bokstav</strong> och håll kvar tills ringen är full. Andas lugnt.</li>
+          <li><strong>Släpp posen</strong> mellan två likadana bokstäver, annars tror jag att du står kvar.</li>
+        </ol>
+        <p class="voice-title">Säg till när du vill …</p>
+        <ul class="chips">
+          <li><span class="chip">starta</span> börja skriva</li>
+          <li><span class="chip">stopp</span> ta en paus</li>
+          <li><span class="chip">ångra</span> ta bort senaste bokstaven</li>
+          <li><span class="chip">rensa</span> börja om</li>
+          <li><span class="chip">skicka</span> skicka iväg ditt mästerverk</li>
+        </ul>
       </section>
 
       <section class="setup-only">
@@ -60,7 +72,7 @@
           <button id="export-btn">Exportera mina mallar</button>
           <label class="button">Importera mina mallar<input id="import-input" type="file" accept="application/json" hidden /></label>
         </div>
-        <p class="hint">Välj en bokstav, tryck på Spela in och ställ dig i posen innan nedräkningen är slut. Siffrorna visar dina egna mallar + andras. Du kan bara ändra dina egna.</p>
+        <p class="hint" hidden>Välj en bokstav, tryck på Spela in och ställ dig i posen innan nedräkningen är slut. Siffrorna visar dina egna mallar + andras. Du kan bara ändra dina egna.</p>
       </section>
       <p class="setup-only"><a href="./">← Tillbaka till användarläget</a></p>
     </main>
