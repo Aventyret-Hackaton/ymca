@@ -32,8 +32,9 @@ godkänn varningen om det självsignerade certifikatet.
   start. Användaren godkänner villkoren med ett tryck och styr sedan med rösten:
   *starta* börjar skriva, *stopp* pausar och *rensa* tömmer meddelandet. Efter
   skicka-posen krävs ett nytt *starta*.
-- **Inspelningsläge** (lägg till `?setup` i adressen, till exempel
-  `https://192.168.…:5173/?setup`): för oss i teamet. Här spelas poser in, och
+- **Inspelningsläge** (kugghjulet uppe till höger på startsidan, eller `?setup`
+  i adressen): för oss i teamet. Ingen inloggning, så vem som helst som hittar
+  knappen kommer in. Här spelas poser in, och
   skrivandet är alltid på utan röst.
 
 Röststyrningen använder webbläsarens inbyggda taligenkänning (`src/voice.ts`).

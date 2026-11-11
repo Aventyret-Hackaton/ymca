@@ -8,8 +8,12 @@
   </head>
   <body>
     <div id="start">
+      <!-- For the team: opens setup mode, where poses are recorded. No login for now. -->
+      <a class="corner-link user-only" href="?setup" aria-label="Inställningar" title="Inställningar">⚙</a>
+      <a class="corner-link setup-only" href="./">← Användarläge</a>
       <h1>YMCA</h1>
-      <p>Skriv meddelanden med kroppen. Ställ telefonen lutad cirka tre meter bort så att hela kroppen syns.</p>
+      <p class="setup-only"><strong>Inställningar.</strong> Här spelar du in poser som appen ska känna igen.</p>
+      <p class="user-only">Skriv meddelanden med kroppen. Ställ telefonen lutad cirka tre meter bort så att hela kroppen syns.</p>
       <div id="terms" class="user-only">
         <h2>Innan du börjar</h2>
         <ul>
@@ -58,6 +62,7 @@
         </div>
         <p class="hint">Välj en bokstav, tryck på Spela in och ställ dig i posen innan nedräkningen är slut. Spela gärna in samma bokstav flera gånger, med olika personer.</p>
       </section>
+      <p class="setup-only"><a href="./">← Tillbaka till användarläget</a></p>
     </main>
 
     <script type="module" src="/src/main.ts"></script>

@@ -34,6 +34,40 @@ body {
   text-align: center;
 }
 
+#start {
+  position: relative;
+}
+
+/* Small link in the top-right corner of the start screen. */
+.corner-link {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 1.5rem;
+  text-decoration: none;
+}
+
+.corner-link.setup-only {
+  font-size: 0.9rem;
+}
+
+.corner-link:hover,
+.corner-link:focus-visible {
+  color: var(--accent);
+}
+
+#app a {
+  color: var(--muted);
+}
+
 #start h1 {
   font-size: 4rem;
   margin: 0;
