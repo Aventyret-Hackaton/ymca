@@ -16,7 +16,8 @@ const COMMAND_WORDS: Record<VoiceCommand, string[]> = {
 
 /** The same command is not fired again within this time (interim results repeat it). */
 const COOLDOWN_MS = 2000;
-const RESTART_DELAY_MS = 300;
+/** Kept short: nothing is heard between two sessions, and Safari ends one after every phrase. */
+const RESTART_DELAY_MS = 100;
 
 // The Web Speech API is not in TypeScript's DOM types; this is the part we use.
 interface Recognition {

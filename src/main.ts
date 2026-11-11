@@ -209,8 +209,80 @@ function sendMessage(): void {
   openSms(text, smsLink);
 }
 
+/** What is shown when a voice command has been heard. */
+const COMMAND_NAMES: Record<VoiceCommand, string> = {
+  start: "STARTA",
+  stop: "STOPP",
+  clear: "RENSA",
+  send: "SKICKA",
+  undo: "ÅNGRA",
+};
+/** How long the "heard it" sign stays in the picture. */
+const COMMAND_FLASH_MS = 1500;
+let commandFlash = { text: "", until: 0 };
+
+let audio: AudioContext | null = null;
+
+/** Must be called from a tap: browsers only allow sound to start from a user gesture. */
+function unlockSound(): void {
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    audio = new Ctor();
+    void audio.resume();
+  } catch {
+    // No sound available: the visual sign still works.
+  }
+}
+
+/** A short rising two-tone blip. Instant, unlike a spoken confirmation. */
+function beep(): void {
+  if (!audio) return;
+  const at = audio.currentTime;
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+  oscillator.frequency.setValueAtTime(660, at);
+  oscillator.frequency.setValueAtTime(880, at + 0.08);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(0.25, at + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.2);
+  oscillator.connect(gain).connect(audio.destination);
+  oscillator.start(at);
+  oscillator.stop(at + 0.22);
+}
+
+/** Tells the user at once that a command word was heard, before anything else happens. */
+function acknowledgeCommand(command: VoiceCommand): void {
+  commandFlash = { text: COMMAND_NAMES[command], until: performance.now() + COMMAND_FLASH_MS };
+  beep();
+  navigator.vibrate?.(60);
+}
+
+/** The heard command as a large sign in the middle of the picture. */
+function drawCommandFlash(now: number): void {
+  if (now >= commandFlash.until) return;
+  const text = `✓ ${commandFlash.text}`;
+  const size = Math.min(canvas.width, canvas.height) * 0.14;
+  ctx.font = `800 ${size}px system-ui, sans-serif`;
+  const width = ctx.measureText(text).width + size * 1.2;
+  const height = size * 1.8;
+  const x = (canvas.width - width) / 2;
+  const y = (canvas.height - height) / 2;
+  ctx.fillStyle = OVERLAY_ACCENT;
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, height / 2);
+  ctx.fill();
+  ctx.fillStyle = "#1f3328";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+}
+
 function handleVoiceCommand(command: VoiceCommand): void {
   if (performance.now() < deafUntil) return;
+  acknowledgeCommand(command);
   if (command === "start" && !writing) {
     writing = true;
     smsLink.hidden = true;
@@ -419,6 +491,7 @@ function frame(): void {
     updateHold(null, now);
     drawBanner(voiceProblem ? "Röststyrning saknas" : voiceListening ? "Säg STARTA" : "Startar röststyrning…");
     statusEl.textContent = voiceProblem || "Jag lyssnar! Säg ”starta” när du är redo att röra på dig.";
+    drawCommandFlash(now);
     return;
   }
 
@@ -431,6 +504,7 @@ function frame(): void {
   const progress = updateHold(confident ? match.label : null, now);
   if (confident) drawBadge(match.label, progress);
   statusEl.textContent = describe(match, confident);
+  drawCommandFlash(now);
 }
 
 function renderLabels(): void {
@@ -540,6 +614,7 @@ $("start-btn").addEventListener("click", async () => {
   // Both must happen directly in the tap, before anything is awaited: Safari
   // only unlocks speech output and speech recognition from a user gesture.
   speak("Startar");
+  unlockSound();
   if (!setupMode) startVoice();
   try {
     startStatus.textContent = "Startar kameran…";
