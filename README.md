@@ -102,6 +102,8 @@ Idéer och funktioner som inte är byggda än. Lägg till nya punkter här.
   webhook-adressen i en serverfunktion, inte i klienten.
 - **Skicka som SMS.** Inte byggt. En `sms:`-länk kräver ett tryck på skärmen.
 - **Lägga upp appen på en HTTPS-adress.**
+- **Kaloriräknare**
+- **Design**
 
 ### Bonustekniker
 
