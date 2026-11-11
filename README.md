@@ -77,6 +77,9 @@ tillsammans.
    `npm run dev:phone`.
 4. Checka in och pusha din fil.
 
+Blev en inspelning fel? **Ta bort senaste** bredvid inspelningsknappen tar bort
+den mall du senast spelade in.
+
 Siffrorna på bokstavsknapparna visar *egna + andras* mallar. Ta bort, importera
 och exportera gäller bara dina egna. En annan persons mall ändras i den
 personens fil.
@@ -90,6 +93,17 @@ Skicka-posen öppnar telefonens meddelandeapp med texten ifylld (`src/sms.ts`).
 Mottagare och Skicka väljs där, med skärmen. Öppnas inte appen av sig själv
 visas länken *Öppnades inte Meddelanden? Tryck här* under meddelandet.
 
+### Kaloriräknare
+
+Medan ett meddelande skrivs visas en uppskattning av hur många kilokalorier det
+har kostat, uppe till höger i bilden. Den läses upp när meddelandet skickas och
+börjar om från noll efter skicka och efter *rensa*. Suddar man bort alla
+bokstäver räknas det fortfarande som samma meddelande.
+
+Siffran är på skoj och ingen mätning: den bygger på en antagen kroppsvikt på
+70 kg och på hur snabbt kroppens punkter rör sig (`src/calories.ts`). Stilla
+ger cirka 2,5 kcal per minut, full fart cirka 7.
+
 ## Koden
 
 | Fil | Innehåll |
@@ -100,6 +114,7 @@ visas länken *Öppnades inte Meddelanden? Tryck här* under meddelandet.
 | `src/voice.ts` | Röstkommandon via webbläsarens taligenkänning. Kommandoorden står i `COMMAND_WORDS` |
 | `vite.config.ts` | Slår ihop `templates/*.json` till en fil för appen och tar emot Spara till repot |
 | `src/sms.ts` | Bygger `sms:`-adressen och öppnar meddelandeappen |
+| `src/calories.ts` | Uppskattar kalorier per meddelande utifrån hur mycket kroppen rör sig |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste

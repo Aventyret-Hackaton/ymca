@@ -8,6 +8,7 @@ import {
   type Match,
   type Template,
 } from "./classify";
+import { CalorieCounter } from "./calories";
 import { CONNECTIONS, createPoseLandmarker, startCamera, type Landmarks } from "./pose";
 import {
   BACKSPACE,
@@ -30,6 +31,9 @@ import { isVoiceSupported, listenForCommands, type VoiceCommand } from "./voice"
 
 /** How long a pose must be held before it counts. */
 const HOLD_MS = 1500;
+/** Overlay colours on the camera picture, matching the sage theme in style.css. */
+const OVERLAY_ACCENT = "#7fd39a";
+const OVERLAY_BG = "rgba(31, 51, 40, 0.8)";
 /** Time to walk away from the phone and get into position before recording. */
 const RECORD_COUNTDOWN_MS = 5000;
 /** How long a recording samples the pose. */
@@ -74,6 +78,8 @@ function setOwnTemplates(next: Template[]): void {
   refreshTemplates();
 }
 let message = "";
+/** Estimated energy spent on the current message. User mode only. */
+const calories = new CalorieCounter();
 
 /**
  * Setup mode (the settings page, ?setup in the address) is for the team:
@@ -107,6 +113,19 @@ function speak(text: string): void {
   speechSynthesis.speak(utterance);
 }
 
+/** How long a note stays in the status line before the live status returns. */
+const NOTE_MS = 4000;
+let noteUntil = 0;
+
+/**
+ * Shows a message in the status line of the settings page. The live status
+ * is redrawn every frame and would otherwise overwrite it immediately.
+ */
+function statusNote(text: string): void {
+  statusEl.textContent = text;
+  noteUntil = performance.now() + NOTE_MS;
+}
+
 function renderMessage(): void {
   messageEl.textContent = message;
 }
@@ -134,11 +153,21 @@ function handleVoiceCommand(command: VoiceCommand): void {
     speak("Skriv ditt meddelande");
   } else if (command === "stop" && writing) {
     writing = false;
+    calories.pause();
     speak("Pausat");
   } else if (command === "clear") {
     message = "";
+    calories.reset();
     renderMessage();
     speak("Rensat");
+  } else if (command === "undo" && message) {
+    message = message.slice(0, -1);
+    renderMessage();
+    speak("Ångrat");
+  } else if (command === "send") {
+    sendMessage();
+    // A new message has to be started by voice again.
+    writing = false;
   }
 }
 
@@ -146,7 +175,13 @@ function confirm(label: string): void {
   if (label === SPACE) message += " ";
   else if (label === BACKSPACE) message = message.slice(0, -1);
   else if (label === SEND) {
+    // Read before sending, in case sending ever clears the message.
+    const sent = message.trim() !== "";
+    const total = calories.format();
     sendMessage();
+    if (sent) speak(`Det kostade ${total} kilokalorier`);
+    // The next message is counted from zero.
+    calories.reset();
     // A new message has to be started by voice again.
     writing = false;
   } else message += label;
@@ -183,19 +218,19 @@ function updateRecording(feature: Feature | null, now: number): void {
   recording = null;
   $<HTMLButtonElement>("record-btn").disabled = false;
   if (samples.length === 0) {
-    statusEl.textContent = "Ingen kropp syntes. Se till att hela kroppen är i bild och försök igen.";
+    statusNote("Ingen kropp syntes. Se till att hela kroppen är i bild och försök igen.");
     speak("Försök igen");
     return;
   }
   setOwnTemplates([...own, { label, points: averageFeatures(samples) }]);
-  statusEl.textContent = `Sparade en mall för ${label}.`;
+  statusNote(`Sparade en mall för ${label}.`);
   speak("Sparad");
 }
 
 function drawSkeleton(landmarks: Landmarks): void {
   const { width, height } = canvas;
   ctx.lineWidth = Math.max(3, width / 200);
-  ctx.strokeStyle = "#ffd23f";
+  ctx.strokeStyle = OVERLAY_ACCENT;
   ctx.lineCap = "round";
   for (const { start, end } of CONNECTIONS) {
     const a = landmarks[start];
@@ -213,11 +248,11 @@ function drawBadge(text: string, progress: number): void {
   const r = Math.min(canvas.width, canvas.height) * 0.11;
   const cx = r * 1.4;
   const cy = r * 1.4;
-  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.fillStyle = OVERLAY_BG;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#ffd23f";
+  ctx.strokeStyle = OVERLAY_ACCENT;
   ctx.lineWidth = r * 0.16;
   ctx.beginPath();
   ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
@@ -232,13 +267,35 @@ function drawBadge(text: string, progress: number): void {
 /** Large text across the bottom of the picture, readable from a few metres away. */
 function drawBanner(text: string): void {
   const height = canvas.height * 0.16;
-  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.fillStyle = OVERLAY_BG;
   ctx.fillRect(0, canvas.height - height, canvas.width, height);
-  ctx.fillStyle = "#ffd23f";
+  ctx.fillStyle = OVERLAY_ACCENT;
   ctx.font = `700 ${Math.min(height * 0.5, canvas.width / (text.length * 0.62))}px system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, canvas.width / 2, canvas.height - height / 2);
+}
+
+/** Calorie count in the top-right corner of the picture, readable from a distance. */
+function drawCalories(): void {
+  const text = `${calories.format()} kcal`;
+  const size = Math.min(canvas.width, canvas.height) * 0.07;
+  ctx.save();
+  ctx.font = `700 ${size}px system-ui, sans-serif`;
+  const width = ctx.measureText(text).width + size;
+  const x = canvas.width - width - size * 0.4;
+  const y = size * 0.4;
+  ctx.fillStyle = "rgba(17, 19, 24, 0.75)";
+  ctx.beginPath();
+  // roundRect is missing in Safari before 16; a plain box is fine there.
+  if (typeof ctx.roundRect === "function") ctx.roundRect(x, y, width, size * 1.6, size * 0.8);
+  else ctx.rect(x, y, width, size * 1.6);
+  ctx.fill();
+  ctx.fillStyle = "#ffd23f";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + width / 2, y + size * 0.85);
+  ctx.restore();
 }
 
 function describe(match: Match | null, confident: boolean): string {
@@ -246,6 +303,12 @@ function describe(match: Match | null, confident: boolean): string {
     return setupMode
       ? "Inga mallar än. Välj en bokstav nedan och spela in."
       : "Inga poser är inspelade än, så appen kan inte känna igen bokstäver.";
+  }
+  if (!setupMode) {
+    if (!match) return "Jag ser dig inte riktigt – backa ett steg så att hela du syns.";
+    return confident
+      ? `Snyggt – ${match.label}! Håll kvar …`
+      : "Hmm, vilken bokstav är det där? Gör posen lite tydligare.";
   }
   if (!match) return "Ingen kropp i bild.";
   const runnerUp = match.runnerUp
@@ -281,19 +344,24 @@ function frame(): void {
     const match = feature ? nearest(feature, templates) : null;
     const confident = match !== null && isConfident(match);
     if (confident) drawBadge(match.label, 0);
-    statusEl.textContent = describe(match, confident);
+    if (now >= noteUntil) statusEl.textContent = describe(match, confident);
     return;
   }
 
   if (!writing) {
+    if (calories.kcal > 0) drawCalories();
     updateHold(null, now);
     drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");
-    statusEl.textContent = voiceProblem || "Lyssnar. Säg ”starta” för att börja skriva.";
+    statusEl.textContent = voiceProblem || "Jag lyssnar! Säg ”starta” när du är redo att röra på dig.";
     return;
   }
 
   const match = feature ? nearest(feature, templates) : null;
   const confident = match !== null && isConfident(match);
+  // Counted before the hold is updated: if this frame confirms the send pose,
+  // the spoken total includes it.
+  calories.update(feature, now);
+  drawCalories();
   const progress = updateHold(confident ? match.label : null, now);
   if (confident) drawBadge(match.label, progress);
   statusEl.textContent = describe(match, confident);
@@ -322,6 +390,11 @@ function renderLabels(): void {
   );
   $("record-btn").textContent = `Spela in ${selectedLabel}`;
   $("delete-btn").textContent = `Ta bort mina mallar för ${selectedLabel}`;
+  // "Latest" is the last template recorded on this device, whatever its letter.
+  const latest = own[own.length - 1];
+  const undoBtn = $<HTMLButtonElement>("undo-btn");
+  undoBtn.disabled = !latest;
+  undoBtn.textContent = latest ? `Ta bort senaste (${LABEL_ICONS[latest.label] ?? latest.label})` : "Ta bort senaste";
 }
 
 function setUpControls(): void {
@@ -330,6 +403,13 @@ function setUpControls(): void {
     recording = { label: selectedLabel, startsAt, endsAt: startsAt + RECORD_SAMPLE_MS, samples: [] };
     $<HTMLButtonElement>("record-btn").disabled = true;
     statusEl.textContent = `Ställ dig i posen för ${selectedLabel}…`;
+  });
+
+  $("undo-btn").addEventListener("click", () => {
+    const latest = own[own.length - 1];
+    if (!latest || recording) return;
+    setOwnTemplates(own.slice(0, -1));
+    statusNote(`Tog bort den senaste mallen för ${latest.label}.`);
   });
 
   $("delete-btn").addEventListener("click", () => {
@@ -355,16 +435,16 @@ function setUpControls(): void {
     repoBtn.hidden = false;
     repoBtn.addEventListener("click", async () => {
       if (!name) {
-        statusEl.textContent = "Fyll i ditt namn först. Det blir filnamnet i repot.";
+        statusNote("Fyll i ditt namn först. Det blir filnamnet i repot.");
         nameInput.focus();
         return;
       }
       repoBtn.disabled = true;
       try {
         await saveTemplatesToRepo(own, name);
-        statusEl.textContent = `Sparade ${own.length} mallar till templates/${name}.json på datorn. Checka in filen.`;
+        statusNote(`Sparade ${own.length} mallar till templates/${name}.json på datorn. Checka in filen.`);
       } catch (error) {
-        statusEl.textContent = `Kunde inte spara till repot: ${(error as Error).message}`;
+        statusNote(`Kunde inte spara till repot: ${(error as Error).message}`);
       }
       repoBtn.disabled = false;
     });
@@ -377,9 +457,9 @@ function setUpControls(): void {
     if (!file) return;
     try {
       setOwnTemplates(await importTemplates(file));
-      statusEl.textContent = `Importerade ${own.length} mallar som dina egna.`;
+      statusNote(`Importerade ${own.length} mallar som dina egna.`);
     } catch (error) {
-      statusEl.textContent = `Kunde inte importera: ${(error as Error).message}`;
+      statusNote(`Kunde inte importera: ${(error as Error).message}`);
     }
   });
 }

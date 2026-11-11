@@ -1,11 +1,15 @@
 :root {
-  color-scheme: dark;
-  --bg: #111318;
-  --panel: #1c2028;
-  --text: #f2f4f8;
-  --muted: #9aa3b2;
-  --accent: #ffd23f;
-  --accent-text: #111318;
+  color-scheme: light;
+  /* Yoga-inspired palette: warm sand, deep forest green and terracotta. */
+  --bg: #efe2cc;
+  --panel: #fffaf1;
+  --border: #d4c2a4;
+  --text: #1f3328;
+  --muted: #55665b;
+  --accent: #2f6b4f;
+  --accent-hover: #24583f;
+  --accent-text: #ffffff;
+  --warm: #b8532e;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
@@ -69,9 +73,14 @@ body {
 }
 
 #start h1 {
-  font-size: 4rem;
   margin: 0;
-  color: var(--accent);
+  color: var(--warm);
+}
+
+.logo {
+  display: block;
+  width: min(320px, 80vw);
+  height: auto;
 }
 
 #start p {
@@ -81,9 +90,18 @@ body {
 }
 
 #app {
+  position: relative;
   max-width: 720px;
   margin: 0 auto;
   padding: 0 16px 32px;
+}
+
+/* Settings link on top of the camera picture, so it needs its own background. */
+#app .app-settings {
+  z-index: 1;
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(31, 51, 40, 0.25);
 }
 
 /* Kept in the layout (not display:none) so iOS keeps the stream playing. */
@@ -101,19 +119,32 @@ body {
   margin: 0 -16px;
   max-height: 60dvh;
   object-fit: contain;
-  background: #000;
+  background: var(--text);
 }
 
 #message {
-  min-height: 3.5rem;
-  margin: 12px 0 4px;
-  padding: 8px 12px;
-  background: var(--panel);
-  border-radius: 8px;
-  font-size: 2rem;
-  font-weight: 700;
+  min-height: 4.5rem;
+  margin: 16px 0 12px;
+  padding: 14px 18px;
+  border: 3px solid var(--accent);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(31, 51, 40, 0.15);
+  color: var(--text);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.2;
   letter-spacing: 0.08em;
   word-break: break-all;
+}
+
+/* Shown until the first letter is written. */
+#message:empty::before {
+  content: "Ditt meddelande dyker upp här …";
+  color: var(--muted);
+  font-size: 1.1rem;
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 #status {
@@ -123,14 +154,21 @@ body {
   font-size: 0.9rem;
 }
 
-.record-main {
-  width: 100%;
+.record-row {
+  display: flex;
+  gap: 8px;
   margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+.record-row #record-btn {
+  flex: 1;
   font-size: 1.1rem;
 }
 
-body.setup #status {
-  margin-top: 8px;
+/* Status text is hidden in both modes. */
+#status {
+  display: none !important;
 }
 
 .row {
@@ -148,7 +186,7 @@ button,
   justify-content: center;
   min-height: 44px;
   padding: 8px 14px;
-  border: 1px solid #3a4150;
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
@@ -162,6 +200,15 @@ button.primary {
   border-color: var(--accent);
   color: var(--accent-text);
   font-weight: 700;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+button:not(.primary):hover:not(:disabled) {
+  border-color: var(--accent);
 }
 
 button:disabled {
@@ -187,8 +234,13 @@ button:disabled {
 }
 
 .labels button.selected {
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
+}
+
+.labels button.selected small {
+  color: var(--accent-text);
 }
 
 .hint {
@@ -205,6 +257,7 @@ body.setup .user-only {
 #terms {
   max-width: 36ch;
   padding: 12px 16px;
+  border-left: 4px solid var(--accent);
   background: var(--panel);
   border-radius: 8px;
   text-align: left;
@@ -243,7 +296,7 @@ body.setup .user-only {
   min-height: 44px;
   margin-top: 4px;
   padding: 8px 12px;
-  border: 1px solid #3a4150;
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
@@ -255,6 +308,56 @@ body.setup .user-only {
   width: 100%;
   margin-bottom: 8px;
   border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* User-mode instructions under the message. */
+.guide {
+  margin-top: 8px;
+  padding: 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.guide h2 {
+  margin: 0 0 12px;
+  color: var(--warm);
+  font-size: 1.1rem;
+}
+
+.steps {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  line-height: 1.4;
+}
+
+.voice-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.chip {
+  margin-right: 4px;
   color: var(--accent);
   font-weight: 700;
 }
