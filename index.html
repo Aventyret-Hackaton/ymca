@@ -11,7 +11,7 @@
       <!-- For the team: opens setup mode, where poses are recorded. No login for now. -->
       <a class="corner-link user-only" href="?setup" aria-label="Inställningar" title="Inställningar">⚙</a>
       <a class="corner-link setup-only" href="./">← Användarläge</a>
-      <h1>YMCA</h1>
+      <h1><img class="logo" src="/src/logo.png" alt="YMCA" width="612" height="284" /></h1>
       <p class="setup-only"><strong>Inställningar.</strong> Här spelar du in poser som appen ska känna igen.</p>
       <p class="user-only">Helt onödigt. Fullkomligt underbart. Stava ditt meddelande med hela kroppen och få upp pulsen mellan mötena.</p>
       <div id="terms" class="user-only">
@@ -35,7 +35,10 @@
       <canvas id="stage"></canvas>
 
       <!-- Settings: directly under the picture, so recording needs no scrolling. -->
-      <button id="record-btn" class="primary setup-only record-main">Spela in vald pose</button>
+      <div class="record-row setup-only">
+        <button id="record-btn" class="primary">Spela in vald pose</button>
+        <button id="undo-btn" disabled>Ta bort senaste</button>
+      </div>
 
       <p id="message" class="user-only" aria-live="polite"></p>
       <p id="status" role="status"></p>

@@ -73,9 +73,16 @@ body {
 }
 
 #start h1 {
-  font-size: 4rem;
   margin: 0;
   color: var(--warm);
+}
+
+.logo {
+  display: block;
+  width: min(320px, 80vw);
+  height: auto;
+  /* The image is black lines on a transparent background; turn them white for the dark page. */
+  filter: invert(1);
 }
 
 #start p {
@@ -149,10 +156,15 @@ body {
   font-size: 0.9rem;
 }
 
-.record-main {
-  width: 100%;
+.record-row {
+  display: flex;
+  gap: 8px;
   margin-top: 12px;
   margin-bottom: 20px;
+}
+
+.record-row #record-btn {
+  flex: 1;
   font-size: 1.1rem;
 }
 
