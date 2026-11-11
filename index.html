@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>YMCA – skriv med kroppen</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="start">
+      <h1>YMCA</h1>
+      <p>Skriv meddelanden med kroppen. Ställ telefonen lutad cirka tre meter bort så att hela kroppen syns.</p>
+      <button id="start-btn" class="primary">Starta kameran</button>
+      <p id="start-status" role="status"></p>
+    </div>
+
+    <main id="app" hidden>
+      <!-- The video is only a frame source; everything visible is drawn on the canvas. -->
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="stage"></canvas>
+
+      <p id="message" aria-live="polite"></p>
+      <p id="status" role="status"></p>
+
+      <nav class="tabs">
+        <button data-tab="write" class="active">Skriv</button>
+        <button data-tab="record">Spela in poser</button>
+      </nav>
+
+      <section id="tab-write">
+        <div class="row">
+          <button id="clear-btn">Rensa</button>
+          <a id="sms-link" class="button" href="sms:">Öppna som SMS</a>
+        </div>
+        <p class="hint">Håll en pose stilla tills ringen fyllts. Släpp posen innan du gör samma bokstav igen.</p>
+      </section>
+
+      <section id="tab-record" hidden>
+        <div id="labels" class="labels"></div>
+        <div class="row">
+          <button id="record-btn" class="primary">Spela in vald pose</button>
+          <button id="delete-btn">Ta bort valda posens mallar</button>
+        </div>
+        <div class="row">
+          <button id="export-btn">Exportera mallar</button>
+          <label class="button">Importera mallar<input id="import-input" type="file" accept="application/json" hidden /></label>
+        </div>
+        <p class="hint">Välj en bokstav, tryck på Spela in och ställ dig i posen innan nedräkningen är slut. Spela gärna in samma bokstav flera gånger, med olika personer.</p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
