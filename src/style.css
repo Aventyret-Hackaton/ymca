@@ -85,9 +85,18 @@ body {
 }
 
 #app {
+  position: relative;
   max-width: 720px;
   margin: 0 auto;
   padding: 0 16px 32px;
+}
+
+/* Settings link on top of the camera picture, so it needs its own background. */
+#app .app-settings {
+  z-index: 1;
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(31, 51, 40, 0.25);
 }
 
 /* Kept in the layout (not display:none) so iOS keeps the stream playing. */
