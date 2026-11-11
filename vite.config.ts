@@ -108,6 +108,10 @@ function templatesPlugin(): Plugin {
 // The camera only works on HTTPS (or localhost). `npm run dev:phone` serves
 // the app on the local network with a self-signed certificate so it can be
 // opened on a phone.
+//
+// `base: "./"` makes the built app work from any folder, such as GitHub Pages'
+// https://aventyret-hackaton.github.io/ymca/.
 export default defineConfig(({ mode }) => ({
+  base: "./",
   plugins: [templatesPlugin(), ...(mode === "phone" ? [basicSsl()] : [])],
 }));
