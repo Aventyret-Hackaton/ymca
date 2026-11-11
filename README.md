@@ -92,8 +92,13 @@ bokstav. Använd siffrorna för att justera trösklarna.
 
 ## Kvar att göra
 
-- Skicka till Slack: `sendMessage()` i `src/main.ts` är en tom krok. Lägg
-  webhook-adressen i en serverfunktion, inte i klienten.
-- Skicka som SMS är inte byggt. En `sms:`-länk kräver ett tryck på skärmen.
 - Bestämma alternativ till de svåraste bokstäverna (golvposer, U och V).
-- Lägga upp appen på en HTTPS-adress.
+
+## Feature-backlogg
+
+Idéer och funktioner som inte är byggda än. Lägg till nya punkter här.
+
+- **Skicka till Slack.** `sendMessage()` i `src/main.ts` är en tom krok. Lägg
+  webhook-adressen i en serverfunktion, inte i klienten.
+- **Skicka som SMS.** Inte byggt. En `sms:`-länk kräver ett tryck på skärmen.
+- **Lägga upp appen på en HTTPS-adress.**
