@@ -132,6 +132,7 @@ ger cirka 2,5 kcal per minut, full fart cirka 7.
 | `src/slack.ts` | Postar meddelandet i Slack via en webhook |
 | `src/sms.ts` | Bygger `sms:`-adressen och öppnar meddelandeappen |
 | `src/calories.ts` | Uppskattar kalorier per meddelande utifrån hur mycket kroppen rör sig |
+| `src/confetti.ts` | Konfetti över bilden när en bokstav bekräftas |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste

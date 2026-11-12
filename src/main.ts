@@ -9,6 +9,7 @@ import {
   type Template,
 } from "./classify";
 import { CalorieCounter } from "./calories";
+import { Confetti } from "./confetti";
 import { CONNECTIONS, createPoseLandmarker, startCamera, type Landmarks } from "./pose";
 import {
   BACKSPACE,
@@ -81,6 +82,8 @@ function setOwnTemplates(next: Template[]): void {
 let message = "";
 /** Estimated energy spent on the current message. User mode only. */
 const calories = new CalorieCounter();
+/** Thrown over the picture each time a letter is confirmed. */
+const confetti = new Confetti();
 
 /**
  * Setup mode (the settings page, ?setup in the address) is for the team:
@@ -198,7 +201,10 @@ function confirm(label: string): void {
     calories.reset();
     // A new message has to be started by voice again.
     writing = false;
-  } else message += label;
+  } else {
+    message += label;
+    confetti.burst(0.5, 0.4, performance.now());
+  }
   if (label !== SEND) speak(label.toLowerCase());
   navigator.vibrate?.(100);
   renderMessage();
@@ -344,6 +350,7 @@ function frame(): void {
   const landmarks = landmarker.detectForVideo(video, now).landmarks[0] as Landmarks | undefined;
   const feature = landmarks ? toFeature(landmarks, canvas.width / canvas.height) : null;
   if (landmarks) drawSkeleton(landmarks);
+  confetti.draw(ctx, now);
 
   if (recording) {
     const secondsLeft = Math.ceil((recording.startsAt - now) / 1000);
