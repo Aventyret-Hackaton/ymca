@@ -120,6 +120,13 @@ Siffran är på skoj och ingen mätning: den bygger på en antagen kroppsvikt p�
 70 kg och på hur snabbt kroppens punkter rör sig (`src/calories.ts`). Stilla
 ger cirka 2,5 kcal per minut, full fart cirka 7.
 
+Efter siffran jämförs meddelandet med en slumpad fikabit, till exempel
+*300 sådana meddelanden blir en semla*. Energin per bit hämtas när appen
+startar från Open Food Facts, en öppen livsmedelsdatabas, med streckkoder
+för riktiga produkter (`src/fika.ts`). Går det inte att nå databasen används
+värdena som står i koden. Med Slack följer siffran och jämförelsen med på en
+egen rad under meddelandet.
+
 ## Koden
 
 | Fil | Innehåll |
@@ -132,6 +139,7 @@ ger cirka 2,5 kcal per minut, full fart cirka 7.
 | `src/slack.ts` | Postar meddelandet i Slack via en webhook |
 | `src/sms.ts` | Bygger `sms:`-adressen och öppnar meddelandeappen |
 | `src/calories.ts` | Uppskattar kalorier per meddelande utifrån hur mycket kroppen rör sig |
+| `src/fika.ts` | Jämför kalorierna med fikabröd från Open Food Facts |
 | `src/confetti.ts` | Konfetti över bilden när en bokstav bekräftas |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
