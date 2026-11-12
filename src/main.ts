@@ -10,6 +10,7 @@ import {
 } from "./classify";
 import { CalorieCounter } from "./calories";
 import { Confetti } from "./confetti";
+import { fikaLine, loadFika } from "./fika";
 import { CONNECTIONS, createPoseLandmarker, startCamera, type Landmarks } from "./pose";
 import {
   BACKSPACE,
@@ -138,8 +139,9 @@ function renderMessage(): void {
  * Sends the message. With a Slack webhook configured it is posted to the
  * channel without touching the screen; otherwise the phone's messaging app is
  * opened with the text filled in, and recipient and Send are chosen there.
+ * The note is added under the message in Slack only.
  */
-function sendMessage(): void {
+function sendMessage(note = ""): void {
   const text = message.trim();
   if (!text) {
     speak("Det finns inget att skicka");
@@ -154,7 +156,7 @@ function sendMessage(): void {
   // Cleared here so the same message is not sent twice; restored if it never left.
   message = "";
   renderMessage();
-  postToSlack(text).catch(() => {
+  postToSlack(text, note).catch(() => {
     message = text;
     renderMessage();
     speak("Det gick inte att skicka. Kolla internet och försök igen");
@@ -195,8 +197,10 @@ function confirm(label: string): void {
     // Read before sending, in case sending ever clears the message.
     const sent = message.trim() !== "";
     const total = calories.format();
-    sendMessage();
-    if (sent) speak(`Det kostade ${total} kilokalorier`);
+    // The same fika item is spoken and posted.
+    const fika = fikaLine(calories.kcal);
+    sendMessage(`🔥 ${total} kcal. ${fika.text} ${fika.emoji}`.trim());
+    if (sent) speak(`Det kostade ${total} kilokalorier. ${fika.text}`);
     // The next message is counted from zero.
     calories.reset();
     // A new message has to be started by voice again.
@@ -510,6 +514,7 @@ $("start-btn").addEventListener("click", async () => {
   if (setupMode) {
     setUpControls();
   } else {
+    loadFika();
     listenForCommands(handleVoiceCommand, () => {
       voiceProblem = "Mikrofonen är blockerad. Tillåt mikrofonen för sidan och ladda om.";
     });
