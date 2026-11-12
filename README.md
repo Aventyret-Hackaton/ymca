@@ -115,6 +115,7 @@ ger cirka 2,5 kcal per minut, full fart cirka 7.
 | `vite.config.ts` | Slår ihop `templates/*.json` till en fil för appen och tar emot Spara till repot |
 | `src/sms.ts` | Bygger `sms:`-adressen och öppnar meddelandeappen |
 | `src/calories.ts` | Uppskattar kalorier per meddelande utifrån hur mycket kroppen rör sig |
+| `src/confetti.ts` | Konfetti över bilden när en bokstav bekräftas |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
 
 Statusraden under bilden visar avståndet till närmaste och näst närmaste
