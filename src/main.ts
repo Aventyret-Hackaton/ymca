@@ -199,8 +199,8 @@ function confirm(label: string): void {
     const total = calories.format();
     // The same fika item is spoken and posted.
     const fika = fikaLine(calories.kcal);
-    sendMessage(`🔥 ${total} kcal. ${fika}`.trim());
-    if (sent) speak(`Det kostade ${total} kilokalorier. ${fika}`);
+    sendMessage(`🔥 ${total} kcal. ${fika.text} ${fika.emoji}`.trim());
+    if (sent) speak(`Det kostade ${total} kilokalorier. ${fika.text}`);
     // The next message is counted from zero.
     calories.reset();
     // A new message has to be started by voice again.

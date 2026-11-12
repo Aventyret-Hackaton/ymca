@@ -10,19 +10,21 @@
 interface Fika {
   /** Spoken with its article: "en mazarin". */
   name: string;
+  /** Shown in Slack only: speech would read the emoji's name aloud. */
+  emoji: string;
   barcode: string;
   /** Energy in one piece. Replaced by the database's value when it arrives. */
   kcal: number;
 }
 
 const FIKA: Fika[] = [
-  { name: "en mazarin", barcode: "7311041085875", kcal: 237 },
-  { name: "en punschrulle", barcode: "7311043004249", kcal: 137 },
-  { name: "en Singoalla", barcode: "7310520003089", kcal: 63 },
-  { name: "en Ballerina", barcode: "7310520009326", kcal: 73 },
-  { name: "en Delicatoboll", barcode: "7315360010754", kcal: 278 },
-  { name: "en bit kladdkaka", barcode: "7310890203508", kcal: 251 },
-  { name: "en semla", barcode: "7333192005304", kcal: 416 },
+  { name: "en mazarin", emoji: "🥧", barcode: "7311041085875", kcal: 237 },
+  { name: "en punschrulle", emoji: "🟢", barcode: "7311043004249", kcal: 137 },
+  { name: "en Singoalla", emoji: "🍪", barcode: "7310520003089", kcal: 63 },
+  { name: "en Ballerina", emoji: "🍪", barcode: "7310520009326", kcal: 73 },
+  { name: "en Delicatoboll", emoji: ":chokladboll:", barcode: "7315360010754", kcal: 278 },
+  { name: "en bit kladdkaka", emoji: "🍫", barcode: "7310890203508", kcal: 251 },
+  { name: "en semla", emoji: ":semla:", barcode: "7333192005304", kcal: 416 },
 ];
 
 const API = "https://world.openfoodfacts.org/api/v2/product/";
@@ -41,11 +43,17 @@ export function loadFika(): void {
   }
 }
 
-/** A sentence comparing the energy to a random fika item, or "" for nothing spent. */
-export function fikaLine(kcal: number): string {
-  if (kcal <= 0) return "";
+export interface FikaLine {
+  text: string;
+  /** "" when there is no comparison. */
+  emoji: string;
+}
+
+/** A sentence comparing the energy to a random fika item; empty for nothing spent. */
+export function fikaLine(kcal: number): FikaLine {
+  if (kcal <= 0) return { text: "", emoji: "" };
   const item = FIKA[Math.floor(Math.random() * FIKA.length)];
-  if (kcal >= item.kcal) return `Du har förtjänat ${item.name}!`;
+  if (kcal >= item.kcal) return { text: `Du har förtjänat ${item.name}!`, emoji: item.emoji };
   const messages = Math.ceil(item.kcal / kcal);
-  return `${messages} sådana meddelanden blir ${item.name}.`;
+  return { text: `${messages} sådana meddelanden blir ${item.name}.`, emoji: item.emoji };
 }
