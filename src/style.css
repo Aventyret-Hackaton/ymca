@@ -361,3 +361,18 @@ body.setup .user-only {
   color: var(--accent);
   font-weight: 700;
 }
+
+.voice-note {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.voice-note.problem {
+  padding: 10px 12px;
+  border-left: 4px solid var(--warm);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 1rem;
+}

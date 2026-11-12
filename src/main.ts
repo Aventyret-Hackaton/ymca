@@ -92,9 +92,18 @@ const setupMode = new URLSearchParams(location.search).has("setup");
 let writing = false;
 /** Set when voice control cannot work, e.g. the microphone was denied. */
 let voiceProblem = "";
-/** When the app last finished talking, to avoid hearing its own voice as a command. */
-let spokeAt = 0;
+/** For troubleshooting on screen: whether the browser is listening, and what it last heard. */
+let voiceListening = false;
+let voiceHeard = "";
+/**
+ * Commands are ignored until this time, so the app does not hear its own
+ * voice as a command. Kept as our own clock: Safari's speechSynthesis.speaking
+ * can stay true after an utterance, which would block every command.
+ */
+let deafUntil = 0;
 const OWN_VOICE_GUARD_MS = 700;
+/** Rough speaking time, used until the utterance reports that it has ended. */
+const SPEAK_MS_PER_CHARACTER = 90;
 
 // Hold-to-confirm state.
 let candidate: string | null = null;
@@ -107,11 +116,67 @@ let selectedLabel = LABELS[0];
 let recording: { label: string; startsAt: number; endsAt: number; samples: Feature[] } | null = null;
 
 function speak(text: string): void {
-  if (!("speechSynthesis" in window)) return;
+  if (!text || !("speechSynthesis" in window)) return;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "sv-SE";
-  utterance.onend = () => (spokeAt = performance.now());
+  deafUntil = performance.now() + text.length * SPEAK_MS_PER_CHARACTER + OWN_VOICE_GUARD_MS;
+  utterance.onend = () => (deafUntil = performance.now() + OWN_VOICE_GUARD_MS);
   speechSynthesis.speak(utterance);
+}
+
+/** Plain-language explanation of a speech recognition error code. */
+function describeVoiceError(code: string): string {
+  switch (code) {
+    case "not-allowed":
+      return "Mikrofonen är blockerad. Tillåt mikrofonen för sidan och ladda om.";
+    case "service-not-allowed":
+      return "Taligenkänning är avstängd på enheten. Slå på Diktering (och Siri) i enhetens inställningar och ladda om.";
+    case "language-not-supported":
+      return "Taligenkänningen på den här enheten stöder inte svenska.";
+    case "audio-capture":
+      return "Hittar ingen mikrofon.";
+    case "network":
+      return "Taligenkänningen når inte nätet. Försöker igen.";
+    case "unsupported":
+      return "Den här webbläsaren saknar röststyrning. Använd Chrome eller Safari.";
+    default:
+      return `Röstfel: ${code}. Försöker igen.`;
+  }
+}
+
+function startVoice(): void {
+  listenForCommands({
+    onCommand: handleVoiceCommand,
+    onListening: () => {
+      voiceListening = true;
+      voiceProblem = "";
+    },
+    onHeard: (transcript) => (voiceHeard = transcript.trim()),
+    onError: (code) => {
+      voiceListening = false;
+      voiceProblem = describeVoiceError(code);
+    },
+  });
+}
+
+const voiceNoteEl = $("voice-note");
+let voiceNoteShown = "";
+
+/**
+ * Shows the state of voice control under the message: a problem, that it has
+ * not started, or what was last heard. The ordinary status line is hidden in
+ * the design, and without this a silent microphone looks like a working one.
+ */
+function renderVoiceNote(): void {
+  let text = "";
+  if (voiceProblem) text = voiceProblem;
+  else if (!voiceListening) text = "Röstigenkänningen har inte startat än.";
+  else if (voiceHeard && !writing) text = `Hörde senast: ”${voiceHeard}”`;
+  if (text === voiceNoteShown) return;
+  voiceNoteShown = text;
+  voiceNoteEl.textContent = text;
+  voiceNoteEl.hidden = text === "";
+  voiceNoteEl.classList.toggle("problem", voiceProblem !== "");
 }
 
 /** How long a note stays in the status line before the live status returns. */
@@ -158,9 +223,80 @@ function sendMessage(): void {
   });
 }
 
+/** What is shown when a voice command has been heard. */
+const COMMAND_NAMES: Record<VoiceCommand, string> = {
+  start: "STARTA",
+  stop: "STOPP",
+  clear: "RENSA",
+  send: "SKICKA",
+  undo: "ÅNGRA",
+};
+/** How long the "heard it" sign stays in the picture. */
+const COMMAND_FLASH_MS = 1500;
+let commandFlash = { text: "", until: 0 };
+
+let audio: AudioContext | null = null;
+
+/** Must be called from a tap: browsers only allow sound to start from a user gesture. */
+function unlockSound(): void {
+  try {
+    const Ctor =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctor) return;
+    audio = new Ctor();
+    void audio.resume();
+  } catch {
+    // No sound available: the visual sign still works.
+  }
+}
+
+/** A short rising two-tone blip. Instant, unlike a spoken confirmation. */
+function beep(): void {
+  if (!audio) return;
+  const at = audio.currentTime;
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+  oscillator.frequency.setValueAtTime(660, at);
+  oscillator.frequency.setValueAtTime(880, at + 0.08);
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(0.25, at + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.2);
+  oscillator.connect(gain).connect(audio.destination);
+  oscillator.start(at);
+  oscillator.stop(at + 0.22);
+}
+
+/** Tells the user at once that a command word was heard, before anything else happens. */
+function acknowledgeCommand(command: VoiceCommand): void {
+  commandFlash = { text: COMMAND_NAMES[command], until: performance.now() + COMMAND_FLASH_MS };
+  beep();
+  navigator.vibrate?.(60);
+}
+
+/** The heard command as a large sign in the middle of the picture. */
+function drawCommandFlash(now: number): void {
+  if (now >= commandFlash.until) return;
+  const text = `✓ ${commandFlash.text}`;
+  const size = Math.min(canvas.width, canvas.height) * 0.14;
+  ctx.font = `800 ${size}px system-ui, sans-serif`;
+  const width = ctx.measureText(text).width + size * 1.2;
+  const height = size * 1.8;
+  const x = (canvas.width - width) / 2;
+  const y = (canvas.height - height) / 2;
+  ctx.fillStyle = OVERLAY_ACCENT;
+  ctx.beginPath();
+  ctx.roundRect(x, y, width, height, height / 2);
+  ctx.fill();
+  ctx.fillStyle = "#1f3328";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+}
+
 function handleVoiceCommand(command: VoiceCommand): void {
-  const talking = "speechSynthesis" in window && speechSynthesis.speaking;
-  if (talking || performance.now() - spokeAt < OWN_VOICE_GUARD_MS) return;
+  if (performance.now() < deafUntil) return;
+  acknowledgeCommand(command);
   if (command === "start" && !writing) {
     writing = true;
     smsLink.hidden = true;
@@ -362,11 +498,14 @@ function frame(): void {
     return;
   }
 
+  renderVoiceNote();
+
   if (!writing) {
     if (calories.kcal > 0) drawCalories();
     updateHold(null, now);
-    drawBanner(voiceProblem ? "Röststyrning saknas" : "Säg STARTA");
+    drawBanner(voiceProblem ? "Röststyrning saknas" : voiceListening ? "Säg STARTA" : "Startar röststyrning…");
     statusEl.textContent = voiceProblem || "Jag lyssnar! Säg ”starta” när du är redo att röra på dig.";
+    drawCommandFlash(now);
     return;
   }
 
@@ -379,6 +518,7 @@ function frame(): void {
   const progress = updateHold(confident ? match.label : null, now);
   if (confident) drawBadge(match.label, progress);
   statusEl.textContent = describe(match, confident);
+  drawCommandFlash(now);
 }
 
 function renderLabels(): void {
@@ -485,8 +625,11 @@ $("start-btn").addEventListener("click", async () => {
     return;
   }
   $<HTMLButtonElement>("start-btn").disabled = true;
-  // Speech must be unlocked from a tap on iOS.
-  speak("");
+  // Both must happen directly in the tap, before anything is awaited: Safari
+  // only unlocks speech output and speech recognition from a user gesture.
+  speak("Startar");
+  unlockSound();
+  if (!setupMode) startVoice();
   try {
     startStatus.textContent = "Startar kameran…";
     await startCamera(video);
@@ -500,13 +643,7 @@ $("start-btn").addEventListener("click", async () => {
   }
   $("start").hidden = true;
   $("app").hidden = false;
-  if (setupMode) {
-    setUpControls();
-  } else {
-    listenForCommands(handleVoiceCommand, () => {
-      voiceProblem = "Mikrofonen är blockerad. Tillåt mikrofonen för sidan och ladda om.";
-    });
-  }
+  if (setupMode) setUpControls();
   // Both modes match against everyone's templates.
   refreshTemplates();
   renderMessage();
