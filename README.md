@@ -89,9 +89,25 @@ du från din fil i repot.
 
 ### Skicka
 
-Skicka-posen öppnar telefonens meddelandeapp med texten ifylld (`src/sms.ts`).
-Mottagare och Skicka väljs där, med skärmen. Öppnas inte appen av sig själv
-visas länken *Öppnades inte Meddelanden? Tryck här* under meddelandet.
+Skicka-posen postar meddelandet i en Slack-kanal (`src/slack.ts`), utan att
+någon behöver röra skärmen. Meddelandet töms när det skickats.
+
+Slack används när adressen till en *incoming webhook* finns i
+`VITE_SLACK_WEBHOOK_URL`:
+
+- **Lokalt:** lägg `VITE_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...`
+  i `.env.local` (filen checkas inte in) och starta om `npm run dev`.
+- **GitHub Pages:** lägg adressen i repots secret `SLACK_WEBHOOK_URL`
+  (Settings → Secrets and variables → Actions) och publicera om.
+
+Adressen hamnar i den publicerade koden, så den som letar kan posta i kanalen.
+Använd en kanal för demot och ta bort webhooken i Slack efteråt. Appen kan
+inte se om Slack tog emot meddelandet, bara om det gick iväg.
+
+Utan webhook öppnar skicka-posen i stället telefonens meddelandeapp med texten
+ifylld (`src/sms.ts`). Mottagare och Skicka väljs där, med skärmen. Öppnas inte
+appen av sig själv visas länken *Öppnades inte Meddelanden? Tryck här* under
+meddelandet.
 
 ### Kaloriräknare
 
@@ -113,6 +129,7 @@ ger cirka 2,5 kcal per minut, full fart cirka 7.
 | `src/templates.ts` | Hämtar allas mallar, sparar de egna. Listan över bokstäver och kontrollposer |
 | `src/voice.ts` | Röstkommandon via webbläsarens taligenkänning. Kommandoorden står i `COMMAND_WORDS` |
 | `vite.config.ts` | Slår ihop `templates/*.json` till en fil för appen och tar emot Spara till repot |
+| `src/slack.ts` | Postar meddelandet i Slack via en webhook |
 | `src/sms.ts` | Bygger `sms:`-adressen och öppnar meddelandeappen |
 | `src/calories.ts` | Uppskattar kalorier per meddelande utifrån hur mycket kroppen rör sig |
 | `src/main.ts` | Gränssnitt, ritning, håll-för-att-bekräfta och inspelning |
@@ -128,8 +145,6 @@ bokstav. Använd siffrorna för att justera trösklarna.
 
 Idéer och funktioner som inte är byggda än. Lägg till nya punkter här.
 
-- **Skicka till Slack.** `sendMessage()` i `src/main.ts` öppnar i dag ett SMS. Lägg
-  webhook-adressen i en serverfunktion, inte i klienten.
 - **Skicka SMS utan att röra skärmen.** I dag väljs mottagare och Skicka i
   meddelandeappen. Helt utan skärm kräver en SMS-tjänst som 46elks eller Twilio.
 - **Lägga upp appen på en HTTPS-adress.**
