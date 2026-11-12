@@ -27,6 +27,7 @@ import {
   type SharedTemplates,
 } from "./templates";
 import { openSms } from "./sms";
+import { isSlackConfigured, postToSlack } from "./slack";
 import { isVoiceSupported, listenForCommands, type VoiceCommand } from "./voice";
 
 /** How long a pose must be held before it counts. */
@@ -131,8 +132,9 @@ function renderMessage(): void {
 }
 
 /**
- * Sends the message as an SMS by opening the phone's messaging app with the
- * text filled in. Choosing a recipient and pressing Send happens there.
+ * Sends the message. With a Slack webhook configured it is posted to the
+ * channel without touching the screen; otherwise the phone's messaging app is
+ * opened with the text filled in, and recipient and Send are chosen there.
  */
 function sendMessage(): void {
   const text = message.trim();
@@ -140,8 +142,20 @@ function sendMessage(): void {
     speak("Det finns inget att skicka");
     return;
   }
-  speak("Öppnar meddelanden");
-  openSms(text, smsLink);
+  if (!isSlackConfigured) {
+    speak("Öppnar meddelanden");
+    openSms(text, smsLink);
+    return;
+  }
+  speak("Skickat till Slack");
+  // Cleared here so the same message is not sent twice; restored if it never left.
+  message = "";
+  renderMessage();
+  postToSlack(text).catch(() => {
+    message = text;
+    renderMessage();
+    speak("Det gick inte att skicka. Kolla internet och försök igen");
+  });
 }
 
 function handleVoiceCommand(command: VoiceCommand): void {
