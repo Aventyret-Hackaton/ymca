@@ -19,9 +19,9 @@ interface Fika {
 
 const FIKA: Fika[] = [
   { name: "en mazarin", emoji: "🥧", barcode: "7311041085875", kcal: 237 },
-  { name: "en punschrulle", emoji: "🟢", barcode: "7311043004249", kcal: 137 },
-  { name: "en Singoalla", emoji: "🍪", barcode: "7310520003089", kcal: 63 },
-  { name: "en Ballerina", emoji: "🍪", barcode: "7310520009326", kcal: 73 },
+  { name: "en punschrulle", emoji: ":punschrulle:", barcode: "7311043004249", kcal: 137 },
+  { name: "en Singoalla", emoji: ":singoalla_kex:", barcode: "7310520003089", kcal: 63 },
+  { name: "en Ballerina", emoji: ":ballerina_kex:", barcode: "7310520009326", kcal: 73 },
   { name: "en Delicatoboll", emoji: ":chokladboll:", barcode: "7315360010754", kcal: 278 },
   { name: "en bit kladdkaka", emoji: "🍫", barcode: "7310890203508", kcal: 251 },
   { name: "en semla", emoji: ":semla:", barcode: "7333192005304", kcal: 416 },
